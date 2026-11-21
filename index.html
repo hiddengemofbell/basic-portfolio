@@ -22,7 +22,7 @@
       rel="stylesheet"
     />
     <!-- Custom Styles -->
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
     <!-- Top Scroll Progress Bar -->
@@ -59,9 +59,6 @@
             </li>
             <li class="nav-item">
               <a class="nav-link" href="#certificates">Certificates</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#quote">Daily Dose</a>
             </li>
             <li class="nav-item">
               <a class="nav-link" href="#contact">Contact</a>
@@ -141,14 +138,14 @@
         <p class="sec-label reveal"><i class="bi bi-person-fill"></i> Who I Am</p>
         <h2 class="sec-title reveal">About Me</h2>
 
- <div class="about-avatar-container reveal">
-      <div class="about-avatar-ring"></div>
-      <div class="about-avatar">
-        <img src="assets/profile.JPG" alt="Maribel Bravo" />
-      </div>
-    </div>
+        <div class="about-wrap reveal">
+          <div class="about-avatar-container">
+            <div class="about-avatar">
+              <img src="assets/profile.JPG" alt="Maribel Bravo" />
+            </div>
+          </div>
 
-          <div class="about-text reveal">
+          <div class="about-text">
             <p>
               Hello! I'm <strong>Maribel Bravo</strong>, a dedicated student and developer with an enthusiastic drive for technology, problem-solving, and continuous learning.
             </p>
@@ -223,6 +220,20 @@
             <div class="skill-pill"><i class="bi bi-code-slash text-info"></i> VS Code</div>
             <div class="skill-pill"><i class="bi bi-database text-warning"></i> SQL &amp; Databases</div>
             <div class="skill-pill"><i class="bi bi-plug-fill text-primary"></i> RESTful APIs</div>
+          </div>
+        </div>
+
+        <!-- AI Technologies -->
+        <div class="skills-category reveal">
+          <div class="skills-category-title">
+            <i class="bi bi-stars"></i> AI Technologies &amp; Tools
+          </div>
+          <div class="skills-wrap">
+            <div class="skill-pill"><i class="bi bi-terminal-split text-info"></i> OpenCode</div>
+            <div class="skill-pill"><i class="bi bi-robot text-warning"></i> Claude</div>
+            <div class="skill-pill"><i class="bi bi-rocket-takeoff-fill text-primary"></i> Antigravity</div>
+            <div class="skill-pill"><i class="bi bi-phone-fill text-success"></i> Mimo</div>
+            <div class="skill-pill"><i class="bi bi-cpu-fill text-danger"></i> Codex</div>
           </div>
         </div>
       </div>
@@ -376,36 +387,6 @@
       </div>
     </section>
 
-    <!-- QUOTE SECTION -->
-    <div class="divider"></div>
-    <section class="sec" id="quote">
-      <div class="container">
-        <p class="sec-label text-center justify-content-center reveal">
-          <i class="bi bi-quote"></i> Daily Dose
-        </p>
-        <h2 class="sec-title text-center reveal">Inspiration</h2>
-
-        <div class="quote-wrap reveal">
-          <div class="quote-box">
-            <p class="quote-text" id="quote-text">
-              <span style="color: #64748b">
-                <span class="spinner-border spinner-border-sm me-2"></span>Loading quote...
-              </span>
-            </p>
-            <p class="quote-author" id="quote-author"></p>
-            <div class="quote-actions">
-              <button class="btn-quote-action" onclick="fetchQuote()">
-                <i class="bi bi-arrow-clockwise me-1" id="quote-refresh-icon"></i> New Quote
-              </button>
-              <button class="btn-quote-action" onclick="copyQuote()">
-                <i class="bi bi-clipboard me-1" id="copy-icon"></i> <span id="copy-text">Copy</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- CONTACT SECTION -->
     <div class="divider"></div>
     <section class="sec" id="contact">
@@ -535,190 +516,6 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Custom JavaScript -->
-    <script>
-      // ── TYPEWRITER EFFECT ──────────────────────────────────
-      const words = ["Aspiring Developer", "Problem Solver", "Tech Enthusiast", "Lifelong Learner"];
-      let wordIndex = 0;
-      let charIndex = 0;
-      let isDeleting = false;
-      const typedOutput = document.getElementById("typed-output");
-
-      function typeEffect() {
-        const currentWord = words[wordIndex];
-        if (isDeleting) {
-          typedOutput.textContent = currentWord.substring(0, charIndex - 1);
-          charIndex--;
-        } else {
-          typedOutput.textContent = currentWord.substring(0, charIndex + 1);
-          charIndex++;
-        }
-
-        let speed = isDeleting ? 40 : 80;
-
-        if (!isDeleting && charIndex === currentWord.length) {
-          speed = 1800; // Pause at full word
-          isDeleting = true;
-        } else if (isDeleting && charIndex === 0) {
-          isDeleting = false;
-          wordIndex = (wordIndex + 1) % words.length;
-          speed = 400;
-        }
-
-        setTimeout(typeEffect, speed);
-      }
-      typeEffect();
-
-      // ── NAVBAR SCROLL & READING PROGRESS & BACK TO TOP ─────
-      const navbar = document.querySelector(".custom-navbar");
-      const progressBar = document.getElementById("scroll-progress");
-      const backToTopBtn = document.getElementById("back-to-top");
-
-      window.addEventListener("scroll", () => {
-        const scrollY = window.scrollY;
-        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-        const progress = docHeight > 0 ? (scrollY / docHeight) * 100 : 0;
-        
-        progressBar.style.width = `${progress}%`;
-
-        if (scrollY > 50) {
-          navbar.classList.add("scrolled");
-        } else {
-          navbar.classList.remove("scrolled");
-        }
-
-        if (scrollY > 400) {
-          backToTopBtn.classList.add("show");
-        } else {
-          backToTopBtn.classList.remove("show");
-        }
-      });
-
-      // ── SCROLL REVEAL OBSERVER ─────────────────────────────
-      const reveals = document.querySelectorAll(".reveal");
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              entry.target.classList.add("active");
-            }
-          });
-        },
-        { threshold: 0.12 }
-      );
-
-      reveals.forEach((el) => observer.observe(el));
-
-      // ── CLOSE MOBILE MENU ON LINK CLICK ────────────────────
-      const navLinks = document.querySelectorAll(".navbar-nav .nav-link");
-      const navCollapse = document.getElementById("navbarContent");
-      navLinks.forEach((link) => {
-        link.addEventListener("click", () => {
-          if (navCollapse.classList.contains("show")) {
-            bootstrap.Collapse.getInstance(navCollapse).hide();
-          }
-        });
-      });
-
-      // ── LOCAL QUOTE LIBRARY ────────────────────────────────
-      const QUOTES = [
-        { quote: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
-        { quote: "Code is like humor. When you have to explain it, it's bad.", author: "Cory House" },
-        { quote: "First, solve the problem. Then, write the code.", author: "John Johnson" },
-        { quote: "Experience is the name everyone gives to their mistakes.", author: "Oscar Wilde" },
-        { quote: "The best way to predict the future is to invent it.", author: "Alan Kay" },
-        { quote: "Simplicity is the soul of efficiency.", author: "Austin Freeman" },
-        { quote: "Talk is cheap. Show me the code.", author: "Linus Torvalds" },
-        { quote: "Make it work, make it right, make it fast.", author: "Kent Beck" },
-        { quote: "Programs must be written for people to read, and only incidentally for machines to execute.", author: "Harold Abelson" },
-        { quote: "Every great developer got there by solving problems they were unqualified to solve.", author: "Patrick McKenzie" }
-      ];
-
-      let lastIndex = -1;
-      let currentQuoteObj = null;
-
-      function fetchQuote() {
-        const textEl = document.getElementById("quote-text");
-        const authorEl = document.getElementById("quote-author");
-        const refreshIcon = document.getElementById("quote-refresh-icon");
-
-        if (refreshIcon) refreshIcon.classList.add("spin-anim");
-        textEl.style.opacity = "0.3";
-
-        setTimeout(() => {
-          let idx;
-          do {
-            idx = Math.floor(Math.random() * QUOTES.length);
-          } while (idx === lastIndex && QUOTES.length > 1);
-
-          lastIndex = idx;
-          currentQuoteObj = QUOTES[idx];
-
-          textEl.textContent = `"${currentQuoteObj.quote}"`;
-          authorEl.textContent = `— ${currentQuoteObj.author}`;
-          textEl.style.opacity = "1";
-          if (refreshIcon) refreshIcon.classList.remove("spin-anim");
-        }, 250);
-      }
-
-      function copyQuote() {
-        if (!currentQuoteObj) return;
-        const fullText = `"${currentQuoteObj.quote}" — ${currentQuoteObj.author}`;
-        navigator.clipboard.writeText(fullText).then(() => {
-          const copyText = document.getElementById("copy-text");
-          const copyIcon = document.getElementById("copy-icon");
-          copyText.textContent = "Copied!";
-          copyIcon.className = "bi bi-check2 me-1";
-
-          setTimeout(() => {
-            copyText.textContent = "Copy";
-            copyIcon.className = "bi bi-clipboard me-1";
-          }, 2000);
-        });
-      }
-
-      fetchQuote();
-
-      // ── FORMSPREE CONTACT FORM ─────────────────────────────
-      document.getElementById("contact-form").addEventListener("submit", async function (e) {
-        e.preventDefault();
-
-        const btn = document.querySelector(".btn-send");
-        const msg = document.getElementById("contact-msg");
-        const originalHtml = btn.innerHTML;
-
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
-        btn.disabled = true;
-
-        try {
-          const res = await fetch("https://formspree.io/f/xojbkprk", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-            },
-            body: JSON.stringify({
-              name: document.querySelector('[name="name"]').value,
-              email: document.querySelector('[name="email"]').value,
-              message: document.querySelector('[name="message"]').value,
-            }),
-          });
-
-          if (res.ok) {
-            msg.textContent = "✅ Message sent successfully! I'll get back to you soon.";
-            msg.className = "contact-msg success";
-            document.getElementById("contact-form").reset();
-          } else {
-            msg.textContent = "❌ Something went wrong. Please try again or email directly.";
-            msg.className = "contact-msg error";
-          }
-        } catch {
-          msg.textContent = "❌ Failed to connect. Please check your network and try again.";
-          msg.className = "contact-msg error";
-        } finally {
-          btn.innerHTML = originalHtml;
-          btn.disabled = false;
-        }
-      });
-    </script>
+    <script src="js/main.js"></script>
   </body>
 </html>
