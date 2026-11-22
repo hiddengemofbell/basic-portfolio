@@ -1,602 +1,784 @@
+import os
 import docx
 from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
+from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml import OxmlElement, parse_xml
 from docx.oxml.ns import nsdecls, qn
-import os
 import win32com.client
+from pypdf import PdfReader, PdfWriter, PageObject, Transformation
 
-def create_manual():
+
+def set_cell_bg(cell, hex_color):
+    tcPr = cell._tc.get_or_add_tcPr()
+    shd = parse_xml(f'<w:shd {nsdecls("w")} w:fill="{hex_color}"/>')
+    tcPr.append(shd)
+
+
+def set_cell_margins(cell, top=80, bottom=80, left=120, right=120):
+    tcPr = cell._tc.get_or_add_tcPr()
+    tcMar = parse_xml(
+        f'<w:tcMar {nsdecls("w")}>'
+        f'<w:top w:w="{top}" w:type="dxa"/>'
+        f'<w:bottom w:w="{bottom}" w:type="dxa"/>'
+        f'<w:left w:w="{left}" w:type="dxa"/>'
+        f'<w:right w:w="{right}" w:type="dxa"/>'
+        f'</w:tcMar>'
+    )
+    tcPr.append(tcMar)
+
+
+def set_cell_borders(cell, color="E2E8F0", sz="4", val="single"):
+    tcPr = cell._tc.get_or_add_tcPr()
+    borders = parse_xml(
+        f'<w:tcBorders {nsdecls("w")}>'
+        f'<w:top w:val="{val}" w:sz="{sz}" w:space="0" w:color="{color}"/>'
+        f'<w:bottom w:val="{val}" w:sz="{sz}" w:space="0" w:color="{color}"/>'
+        f'<w:left w:val="{val}" w:sz="{sz}" w:space="0" w:color="{color}"/>'
+        f'<w:right w:val="{val}" w:sz="{sz}" w:space="0" w:color="{color}"/>'
+        f'</w:tcBorders>'
+    )
+    tcPr.append(borders)
+
+
+def set_no_borders(table):
+    tblPr = table._tbl.tblPr
+    borders = parse_xml(
+        f'<w:tblBorders {nsdecls("w")}>'
+        f'<w:top w:val="none" w:sz="0" w:space="0" w:color="auto"/>'
+        f'<w:left w:val="none" w:sz="0" w:space="0" w:color="auto"/>'
+        f'<w:bottom w:val="none" w:sz="0" w:space="0" w:color="auto"/>'
+        f'<w:right w:val="none" w:sz="0" w:space="0" w:color="auto"/>'
+        f'<w:insideH w:val="none" w:sz="0" w:space="0" w:color="auto"/>'
+        f'<w:insideV w:val="none" w:sz="0" w:space="0" w:color="auto"/>'
+        f'</w:tblBorders>'
+    )
+    tblPr.append(borders)
+
+
+def add_page_number_to_footer(section):
+    section.different_first_page_header_footer = True
+    footer = section.footer
+    p = footer.paragraphs[0]
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.space_before = Pt(0)
+    p.paragraph_format.space_after = Pt(0)
+
+    r_pre = p.add_run("ITST 301 Portfolio Guide  •  Maribel Bravo  •  Page ")
+    r_pre.font.name = "Segoe UI"
+    r_pre.font.size = Pt(8.5)
+    r_pre.font.color.rgb = RGBColor(100, 116, 139)
+
+    fldSimple = OxmlElement("w:fldSimple")
+    fldSimple.set(qn("w:instr"), "PAGE")
+    r_pg = OxmlElement("w:r")
+    rPr = OxmlElement("w:rPr")
+    rFonts = OxmlElement("w:rFonts")
+    rFonts.set(qn("w:ascii"), "Segoe UI")
+    sz = OxmlElement("w:sz")
+    sz.set(qn("w:val"), "17")  # 8.5 pt
+    color = OxmlElement("w:color")
+    color.set(qn("w:val"), "7C3AED")
+    b = OxmlElement("w:b")
+    rPr.append(rFonts)
+    rPr.append(sz)
+    rPr.append(color)
+    rPr.append(b)
+    r_pg.append(rPr)
+    fldSimple.append(r_pg)
+    p._p.append(fldSimple)
+
+
+def create_brochure_manual():
     doc = docx.Document()
 
-    # Configure Section: Page size 6.5 in width x 8.5 in height (Finished IPT2 Booklet Size)
-    # Long bond paper is 8.5 x 13 inches folded landscape in half
+    # Configure IPT2 Finished Booklet Size: 6.5 x 8.5 in (half of 8.5 x 13 in long bond)
     for section in doc.sections:
         section.page_width = Inches(6.5)
         section.page_height = Inches(8.5)
-        section.top_margin = Inches(0.45)
-        section.bottom_margin = Inches(0.45)
-        section.left_margin = Inches(0.5)
+        section.top_margin = Inches(0.5)
+        section.bottom_margin = Inches(0.5)
+        section.left_margin = Inches(0.6)   # extra space at fold
         section.right_margin = Inches(0.5)
+        section.footer_distance = Inches(0.28)
+        # Enable mirror margins for duplex booklet folding
+        sectPr = section._sectPr
+        mirror = OxmlElement("w:mirrorMargins")
+        sectPr.append(mirror)
+        add_page_number_to_footer(section)
 
-    # Palette
-    C_NAVY = RGBColor(15, 23, 42)      # #0f172a
-    C_PURPLE = RGBColor(124, 58, 237)   # #7c3aed
-    C_CYAN = RGBColor(6, 182, 212)      # #06b6d4
-    C_GRAY = RGBColor(100, 116, 139)    # #64748b
-    C_DARK = RGBColor(30, 41, 59)       # #1e293b
+    C_NAVY = RGBColor(15, 23, 42)       # #0F172A
+    C_PURPLE = RGBColor(124, 58, 237)   # #7C3AED
+    C_CYAN = RGBColor(6, 182, 212)      # #06B6D4
+    C_GRAY = RGBColor(100, 116, 139)    # #64748B
+    C_DARK = RGBColor(30, 41, 59)       # #1E293B
+    C_WHITE = RGBColor(255, 255, 255)
 
-    # Styling helpers
-    def set_cell_background(cell, fill_hex):
-        tcPr = cell._tc.get_or_add_tcPr()
-        shd = parse_xml(f'<w:shd {nsdecls("w")} w:fill="{fill_hex}"/>')
-        tcPr.append(shd)
+    def add_section_banner(kicker, title):
+        tbl = doc.add_table(rows=1, cols=1)
+        tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+        set_no_borders(tbl)
+        c = tbl.rows[0].cells[0]
+        c.width = Inches(5.4)
+        set_cell_bg(c, "0F172A")
+        set_cell_margins(c, top=90, bottom=90, left=140, right=140)
+        p = c.paragraphs[0]
+        p.paragraph_format.space_before = Pt(0)
+        p.paragraph_format.space_after = Pt(0)
+        rk = p.add_run(kicker.upper() + "\n")
+        rk.font.name = "Segoe UI"
+        rk.font.size = Pt(8)
+        rk.bold = True
+        rk.font.color.rgb = C_CYAN
+        rt = p.add_run(title)
+        rt.font.name = "Segoe UI"
+        rt.font.size = Pt(14)
+        rt.bold = True
+        rt.font.color.rgb = C_WHITE
 
-    def set_cell_margins(cell, top=80, bottom=80, left=120, right=120):
-        tcPr = cell._tc.get_or_add_tcPr()
-        tcMar = parse_xml(f'<w:tcMar {nsdecls("w")}><w:top w:w="{top}" w:type="dxa"/><w:bottom w:w="{bottom}" w:type="dxa"/><w:left w:w="{left}" w:type="dxa"/><w:right w:w="{right}" w:type="dxa"/></w:tcMar>')
-        tcPr.append(tcMar)
+        sp = doc.add_paragraph()
+        sp.paragraph_format.space_before = Pt(0)
+        sp.paragraph_format.space_after = Pt(4)
 
-    def add_heading_1(text, color=C_PURPLE):
-        p = doc.add_paragraph()
-        p.paragraph_format.space_before = Pt(10)
-        p.paragraph_format.space_after = Pt(4)
-        run = p.add_run(text)
-        run.bold = True
-        run.font.size = Pt(13)
-        run.font.color.rgb = color
-        run.font.name = 'Arial'
-        return p
-
-    def add_heading_2(text, color=C_NAVY):
+    def add_subhead(text):
         p = doc.add_paragraph()
         p.paragraph_format.space_before = Pt(6)
         p.paragraph_format.space_after = Pt(2)
-        run = p.add_run(text)
-        run.bold = True
-        run.font.size = Pt(11)
-        run.font.color.rgb = color
-        run.font.name = 'Arial'
+        r = p.add_run(text)
+        r.font.name = "Segoe UI"
+        r.font.size = Pt(11.5)
+        r.bold = True
+        r.font.color.rgb = C_PURPLE
         return p
 
-    def add_body_p(text, bold_prefix="", space_after=3):
+    def add_body(text, bold_prefix="", space_after=4):
         p = doc.add_paragraph()
         p.paragraph_format.space_before = Pt(0)
         p.paragraph_format.space_after = Pt(space_after)
         p.paragraph_format.line_spacing = 1.15
         if bold_prefix:
-            r_bold = p.add_run(bold_prefix + " ")
-            r_bold.bold = True
-            r_bold.font.size = Pt(9.5)
-            r_bold.font.name = 'Arial'
-            r_bold.font.color.rgb = C_DARK
-        run = p.add_run(text)
-        run.font.size = Pt(9.5)
-        run.font.name = 'Arial'
-        run.font.color.rgb = C_DARK
+            rb = p.add_run(bold_prefix + " ")
+            rb.font.name = "Segoe UI"
+            rb.font.size = Pt(11)
+            rb.bold = True
+            rb.font.color.rgb = C_NAVY
+        r = p.add_run(text)
+        r.font.name = "Segoe UI"
+        r.font.size = Pt(11)
+        r.font.color.rgb = C_DARK
         return p
 
+    def add_callout_card(title, body, bg="F8FAFC", accent="7C3AED"):
+        tbl = doc.add_table(rows=1, cols=1)
+        tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+        c = tbl.rows[0].cells[0]
+        c.width = Inches(5.4)
+        set_cell_bg(c, bg)
+        set_cell_margins(c, top=70, bottom=70, left=130, right=120)
+        tcPr = c._tc.get_or_add_tcPr()
+        borders = parse_xml(
+            f'<w:tcBorders {nsdecls("w")}>'
+            f'<w:top w:val="single" w:sz="4" w:space="0" w:color="E2E8F0"/>'
+            f'<w:bottom w:val="single" w:sz="4" w:space="0" w:color="E2E8F0"/>'
+            f'<w:left w:val="single" w:sz="18" w:space="0" w:color="{accent}"/>'
+            f'<w:right w:val="single" w:sz="4" w:space="0" w:color="E2E8F0"/>'
+            f'</w:tcBorders>'
+        )
+        tcPr.append(borders)
+        p = c.paragraphs[0]
+        p.paragraph_format.space_after = Pt(0)
+        p.paragraph_format.line_spacing = 1.12
+        rt = p.add_run(title + "\n")
+        rt.font.name = "Segoe UI"
+        rt.font.size = Pt(10.5)
+        rt.bold = True
+        rt.font.color.rgb = C_NAVY
+        rb = p.add_run(body)
+        rb.font.name = "Segoe UI"
+        rb.font.size = Pt(10)
+        rb.font.color.rgb = C_DARK
+        sp = doc.add_paragraph()
+        sp.paragraph_format.space_after = Pt(3)
+
     # ══════════════════════════════════════════════════════════════════════
-    # PAGE 1: COVER PAGE
+    # PAGE 1: BROCHURE FRONT COVER
     # ══════════════════════════════════════════════════════════════════════
-    p_header = doc.add_paragraph()
-    p_header.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_header.paragraph_format.space_after = Pt(2)
-    r1 = p_header.add_run("Republic of the Philippines\nLAGUNA STATE POLYTECHNIC UNIVERSITY\n")
-    r1.bold = True
-    r1.font.size = Pt(9.5)
-    r1.font.name = 'Arial'
-    r1.font.color.rgb = C_NAVY
-    r2 = p_header.add_run("Province of Laguna · Siniloan Campus\nCollege of Computer Studies\n\n")
-    r2.font.size = Pt(8.5)
-    r2.font.name = 'Arial'
-    r2.font.color.rgb = C_GRAY
+    p_univ = doc.add_paragraph()
+    p_univ.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_univ.paragraph_format.space_before = Pt(4)
+    p_univ.paragraph_format.space_after = Pt(10)
+    ru1 = p_univ.add_run("REPUBLIC OF THE PHILIPPINES\nLAGUNA STATE POLYTECHNIC UNIVERSITY\n")
+    ru1.font.name = "Segoe UI"
+    ru1.font.size = Pt(10)
+    ru1.bold = True
+    ru1.font.color.rgb = C_NAVY
+    ru2 = p_univ.add_run("Siniloan Campus • College of Computer Studies")
+    ru2.font.name = "Segoe UI"
+    ru2.font.size = Pt(9.5)
+    ru2.font.color.rgb = C_GRAY
 
-    # Title Banner Box
-    p_box = doc.add_paragraph()
-    p_box.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_box.paragraph_format.space_before = Pt(24)
-    p_box.paragraph_format.space_after = Pt(12)
-    r_tag = p_box.add_run("CULMINATING PERFORMANCE ASSESSMENT\n")
-    r_tag.bold = True
-    r_tag.font.size = Pt(9)
-    r_tag.font.color.rgb = C_CYAN
-    r_title = p_box.add_run("INDIVIDUAL PORTFOLIO MANUAL\n& SYSTEM DOCUMENTATION\n")
-    r_title.bold = True
-    r_title.font.size = Pt(16)
-    r_title.font.color.rgb = C_PURPLE
-    r_sub = p_box.add_run("Principles of Web Design (ITST 301) / IPT2 Final Project (ITEL 304)")
-    r_sub.font.size = Pt(10)
-    r_sub.font.color.rgb = C_DARK
+    # Hero Brochure Cover Panel
+    cover_tbl = doc.add_table(rows=1, cols=1)
+    cover_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+    set_no_borders(cover_tbl)
+    cc = cover_tbl.rows[0].cells[0]
+    cc.width = Inches(5.4)
+    set_cell_bg(cc, "0F172A")
+    set_cell_margins(cc, top=240, bottom=240, left=180, right=180)
+    cp = cc.paragraphs[0]
+    cp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    cp.paragraph_format.space_after = Pt(0)
 
-    # Developer Info Box Table
-    p_space = doc.add_paragraph()
-    p_space.paragraph_format.space_before = Pt(30)
-    p_space.paragraph_format.space_after = Pt(6)
+    r_badge = cp.add_run("ITST 301  •  PRINCIPLES OF WEB DESIGN\n\n")
+    r_badge.font.name = "Segoe UI"
+    r_badge.font.size = Pt(9.5)
+    r_badge.bold = True
+    r_badge.font.color.rgb = C_CYAN
 
-    table_cover = doc.add_table(rows=6, cols=2)
-    table_cover.alignment = WD_TABLE_ALIGNMENT.CENTER
-    table_cover.autofit = False
+    r_main = cp.add_run("PERSONAL PORTFOLIO\nBROCHURE & SYSTEM GUIDE\n\n")
+    r_main.font.name = "Segoe UI"
+    r_main.font.size = Pt(19)
+    r_main.bold = True
+    r_main.font.color.rgb = C_WHITE
 
-    cover_data = [
-        ("Student Developer:", "Maribel Bravo"),
-        ("Student ID Number:", "0224-0865"),
-        ("Degree & Section:", "BSIT 3A WMAD (Web & Mobile Application Development)"),
-        ("Course & Code:", "ITST 301 Principles of Web Design"),
-        ("Course Instructor:", "Prof. Julius A. Derla | College of Computer Studies"),
-        ("Academic Year:", "Academic Year 2026–2027 (First Semester)")
-    ]
+    r_desc = cp.add_run("Planning, Semantic HTML5, Responsive Bootstrap 5,\nAccessibility & Live Deployment Manual")
+    r_desc.font.name = "Segoe UI"
+    r_desc.font.size = Pt(10.5)
+    r_desc.font.color.rgb = RGBColor(203, 213, 225)
 
-    for idx, (label, val) in enumerate(cover_data):
-        row = table_cover.rows[idx]
-        cell_lbl, cell_val = row.cells[0], row.cells[1]
-        cell_lbl.width = Inches(1.8)
-        cell_val.width = Inches(3.6)
-        set_cell_margins(cell_lbl, 50, 50, 80, 80)
-        set_cell_margins(cell_val, 50, 50, 80, 80)
-        set_cell_background(cell_lbl, "F1F5F9")
-        set_cell_background(cell_val, "FFFFFF")
+    p_gap = doc.add_paragraph()
+    p_gap.paragraph_format.space_after = Pt(8)
 
-        p_l = cell_lbl.paragraphs[0]
-        p_l.paragraph_format.space_after = Pt(0)
-        r = p_l.add_run(label)
-        r.bold = True
-        r.font.size = Pt(8.5)
-        r.font.color.rgb = C_NAVY
+    # Developer Photo + Info Brochure Strip
+    info_tbl = doc.add_table(rows=1, cols=2)
+    info_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+    set_no_borders(info_tbl)
+    c_img, c_txt = info_tbl.rows[0].cells[0], info_tbl.rows[0].cells[1]
+    c_img.width = Inches(1.5)
+    c_txt.width = Inches(3.9)
+    set_cell_bg(c_img, "F8FAFC")
+    set_cell_bg(c_txt, "F8FAFC")
+    set_cell_margins(c_img, 100, 100, 100, 60)
+    set_cell_margins(c_txt, 100, 100, 60, 100)
 
-        p_v = cell_val.paragraphs[0]
-        p_v.paragraph_format.space_after = Pt(0)
-        r = p_v.add_run(val)
-        r.font.size = Pt(8.5)
-        r.font.color.rgb = C_DARK
+    prof_path = r"C:\Users\moral\OneDrive\Practice\basic-portfolio\assets\profile.jpg"
+    p_im = c_img.paragraphs[0]
+    p_im.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    if os.path.exists(prof_path):
+        p_im.add_run().add_picture(prof_path, width=Inches(1.15))
 
-    p_bottom = doc.add_paragraph()
-    p_bottom.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_bottom.paragraph_format.space_before = Pt(35)
-    r_url = p_bottom.add_run("Public Web Deployment: https://hiddengemofbell.github.io/basic-portfolio/\nGitHub Source: https://github.com/hiddengemofbell/basic-portfolio")
-    r_url.font.size = Pt(8)
-    r_url.font.color.rgb = C_GRAY
+    p_tx = c_txt.paragraphs[0]
+    p_tx.paragraph_format.line_spacing = 1.2
+    for lbl, val in [
+        ("Developer: ", "Maribel Bravo\n"),
+        ("Student ID: ", "0224-0865\n"),
+        ("Section: ", "BSIT 3A WMAD\n"),
+        ("Instructor: ", "Prof. Julius A. Derla\n"),
+        ("Subject: ", "ITST 301 / IPT2 Final Project"),
+    ]:
+        rl = p_tx.add_run(lbl)
+        rl.font.name = "Segoe UI"
+        rl.font.size = Pt(10)
+        rl.bold = True
+        rl.font.color.rgb = C_PURPLE
+        rv = p_tx.add_run(val)
+        rv.font.name = "Segoe UI"
+        rv.font.size = Pt(10)
+        rv.font.color.rgb = C_NAVY
+
+    p_foot = doc.add_paragraph()
+    p_foot.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_foot.paragraph_format.space_before = Pt(16)
+    rf = p_foot.add_run(
+        "Live Portfolio: https://hiddengemofbell.github.io/basic-portfolio/\n"
+        "GitHub Repo: https://github.com/hiddengemofbell/basic-portfolio\n"
+        "Academic Year 2026–2027"
+    )
+    rf.font.name = "Segoe UI"
+    rf.font.size = Pt(9)
+    rf.font.color.rgb = C_GRAY
 
     doc.add_page_break()
 
     # ══════════════════════════════════════════════════════════════════════
-    # PAGE 2: TABLE OF CONTENTS & SECTION 1: DEVELOPER PROFILE
+    # PAGE 2: TABLE OF CONTENTS & DEVELOPER PROFILE
     # ══════════════════════════════════════════════════════════════════════
-    add_heading_1("Table of Contents")
-    toc_items = [
-        ("1. Developer Profile & Background", "Page 2"),
-        ("2. Portfolio Purpose & Section Architecture", "Page 3"),
-        ("3. Visual Identity, Monogram Logo & Color Palette", "Page 4"),
-        ("4. Desktop & Mobile UI Layouts & Figma Alignment", "Page 5"),
-        ("5. Assets, Images & External Attributions", "Page 6"),
-        ("6. Technology Stack & JavaScript Interaction Breakdown", "Page 7"),
-        ("7. Repository Structure & Deployment Guide", "Page 8"),
-        ("8. Learning Reflection & Technical Takeaways", "Page 9"),
-        ("9. Acceptance Tests Matrix (T01 – T06 Detailed Checks)", "Page 10"),
-        ("10. Table of Specifications & Appendix A Rubric", "Page 11"),
-        ("11. Submission Verification & Print Impost Checklist", "Page 12")
+    add_section_banner("Guide Overview", "Table of Contents & Developer Profile")
+
+    toc_rows = [
+        ("01", "Developer Profile & Core Skills", "p. 2"),
+        ("02", "Portfolio Purpose & Section Guide", "p. 3"),
+        ("03", "Personal Logo & Color Palette (HEX)", "p. 4"),
+        ("04", "Desktop & Mobile UI vs. Figma Designs", "p. 5"),
+        ("05", "Assets, Images & External Credits", "p. 6"),
+        ("06", "Technology Stack & JS Interactions", "p. 7"),
+        ("07", "GitHub Repository & Live Deployment", "p. 8"),
+        ("08", "Technical Learning Reflection", "p. 9"),
+        ("09", "Acceptance Tests Matrix (T01 – T06)", "p. 10"),
+        ("10", "Grading Rubric & Print Checklist", "p. 11–12"),
     ]
-    t_toc = doc.add_table(rows=len(toc_items), cols=2)
+    t_toc = doc.add_table(rows=len(toc_rows), cols=3)
     t_toc.alignment = WD_TABLE_ALIGNMENT.CENTER
-    for idx, (sec_name, page_num) in enumerate(toc_items):
-        row = t_toc.rows[idx]
-        c0, c1 = row.cells[0], row.cells[1]
-        c0.width = Inches(4.3)
-        c1.width = Inches(1.1)
-        set_cell_margins(c0, 20, 20, 40, 40)
-        set_cell_margins(c1, 20, 20, 40, 40)
+    for i, (num, title, pg) in enumerate(toc_rows):
+        row = t_toc.rows[i]
+        c0, c1, c2 = row.cells[0], row.cells[1], row.cells[2]
+        c0.width, c1.width, c2.width = Inches(0.55), Inches(4.1), Inches(0.75)
+        bg = "F8FAFC" if i % 2 == 0 else "FFFFFF"
+        for c in (c0, c1, c2):
+            set_cell_bg(c, bg)
+            set_cell_margins(c, 35, 35, 60, 60)
+            set_cell_borders(c, "E2E8F0", "4")
         p0 = c0.paragraphs[0]
-        p0.paragraph_format.space_after = Pt(1)
-        r0 = p0.add_run(sec_name)
-        r0.font.size = Pt(8.5)
-        r0.font.color.rgb = C_DARK
+        p0.paragraph_format.space_after = Pt(0)
+        r0 = p0.add_run(num)
+        r0.font.name, r0.font.size, r0.bold, r0.font.color.rgb = "Segoe UI", Pt(9.5), True, C_PURPLE
 
         p1 = c1.paragraphs[0]
-        p1.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        p1.paragraph_format.space_after = Pt(1)
-        r1 = p1.add_run(page_num)
-        r1.font.size = Pt(8.5)
-        r1.font.color.rgb = C_PURPLE
-        r1.bold = True
+        p1.paragraph_format.space_after = Pt(0)
+        r1 = p1.add_run(title)
+        r1.font.name, r1.font.size, r1.font.color.rgb = "Segoe UI", Pt(9.5), C_DARK
 
-    add_heading_1("1. Developer Profile")
-    add_body_p("Maribel Bravo is a passionate Information Technology undergraduate student at Laguna State Polytechnic University (Siniloan Campus), specializing in Web and Mobile Application Development (BSIT 3A WMAD). She focuses on designing clean, semantic, and highly performant full-stack systems, blending aesthetic modern interfaces with secure, reliable backend architectures.")
+        p2 = c2.paragraphs[0]
+        p2.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        p2.paragraph_format.space_after = Pt(0)
+        r2 = p2.add_run(pg)
+        r2.font.name, r2.font.size, r2.bold, r2.font.color.rgb = "Segoe UI", Pt(9.5), True, C_NAVY
 
-    add_body_p("0224-0865", bold_prefix="Student ID:")
-    add_body_p("BSIT 3A WMAD — College of Computer Studies, LSPU", bold_prefix="Course & Section:")
-    add_body_p("moralesmaribel262@gmail.com | +63 97 350 5508", bold_prefix="Contact Channels:")
-    add_body_p("https://www.linkedin.com/in/maribel-bravo-876655374", bold_prefix="LinkedIn Profile:")
-    add_body_p("HTML5, CSS3, JavaScript (ES6+), Python (Flask), Java, SQL, Bootstrap 5, Tailwind CSS, PostgreSQL, Git/GitHub, REST APIs.", bold_prefix="Core Competencies:")
-    add_body_p("Senior Staff, The Baybay Granary Student Publication (2025–Present); Assistant Secretary, Society for Programming, Automation and Development Engineering (SPADE).", bold_prefix="Leadership & Service:")
-
-    doc.add_page_break()
-
-    # ══════════════════════════════════════════════════════════════════════
-    # PAGE 3: SECTION 2: PORTFOLIO PURPOSE & MAIN SECTIONS
-    # ══════════════════════════════════════════════════════════════════════
-    add_heading_1("2. Portfolio Description and Parts")
-    add_body_p("The primary purpose of this personal portfolio is to establish a verified, accessible, and responsive digital presence that presents the developer's academic background, technical proficiencies, featured software engineering projects, and completed industry certifications to prospective employers, academic evaluators, and industry collaborators.")
-    add_body_p("The website is architected as an intuitive single-page application with smooth section targeting, high visual hierarchy, and full keyboard accessibility conforming to W3C and WCAG 2.1 AA specifications.")
-
-    add_heading_2("Architecture of Main Website Sections")
-
-    sections_info = [
-        ("Header & Navigation:", "Displays the 'MB' brand mark and responsive navigation links (About, Skills, Projects, Certificates, Contact). Collapses into a responsive hamburger drawer on mobile devices with auto-closing link handlers."),
-        ("Hero Introduction:", "Features an eye-catching typewriter dynamic text cycler, an availability indicator, quick-action call-to-action buttons (Download CV, Connect), and direct social profile channels."),
-        ("About Me:", "Presents developer background, academic specialization at LSPU Siniloan, core values, location availability, and specialty highlight metrics."),
-        ("Technical Skills:", "Modular pill tags categorized into Core Languages (Python, Java, JS), Frontend & UI (HTML5, CSS3, Bootstrap 5), Tools (Git, VS Code, SQL), and AI development environments."),
-        ("Featured Projects:", "Showcases real-world applications (Cake Ordering Platform, Real-Time Queue System, EduFlow Task Manager PWA) with role descriptions, tech stack tags, and repository links."),
-        ("Certificates & Achievements:", "Highlights cybersecurity, system hardware/software, and OS architecture credentials with credential verification links."),
-        ("Interactive Contact Section:", "Two-column grid with direct communication details and an asynchronous AJAX form powered by Formspree with instant feedback."),
-        ("Semantic Footer:", "Provides secondary navigation channels, copyright metadata, and academic course attribution.")
-    ]
-
-    for title, desc in sections_info:
-        add_body_p(desc, bold_prefix=title, space_after=3)
+    add_subhead("1. Developer Profile")
+    add_body(
+        "I am Maribel Bravo (ID: 0224-0865), a 3rd-year BSIT student majoring in Web and Mobile Application Development (BSIT 3A WMAD) at Laguna State Polytechnic University – Siniloan Campus."
+    )
+    add_body(
+        "HTML5, CSS3, Bootstrap 5, JavaScript (ES6+), Python (Flask), Java, SQL, PostgreSQL, React, and Git/GitHub.",
+        bold_prefix="Explainable Skills:"
+    )
+    add_body(
+        "moralesmaribel262@gmail.com  |  github.com/hiddengemofbell  |  linkedin.com/in/maribel-bravo-876655374",
+        bold_prefix="Professional Links:"
+    )
 
     doc.add_page_break()
 
     # ══════════════════════════════════════════════════════════════════════
-    # PAGE 4: SECTION 3: VISUAL IDENTITY & COLOR PALETTE
+    # PAGE 3: PORTFOLIO DESCRIPTION & PARTS
     # ══════════════════════════════════════════════════════════════════════
-    add_heading_1("3. Logo and Color Palette")
-    add_body_p("The visual identity is designed around a modern cybernetic dark aesthetic. It combines deep obsidian backgrounds with vibrant violet-to-cyan gradients to convey high technical sophistication while maintaining strict text contrast ratios.")
+    add_section_banner("Section 02", "Portfolio Description & Main Parts")
+    add_body(
+        "This portfolio presents my academic background, technical skills, and software projects to IT instructors, internship recruiters, and fellow developers."
+    )
 
-    add_heading_2("Personal Monogram Wordmark ('MB')")
-    add_body_p("The brand logo consists of an enclosed monogram 'MB' (Maribel Bravo) styled with an electric-cyan glowing status beacon. The beacon represents continuous uptime, availability for technical opportunities, and attention to detail. In the navigation bar, it serves as a persistent anchor returning visitors to the top of the portfolio.")
-
-    add_heading_2("Color Palette Specification Table")
-    palette = [
-        ("Variable Token", "HEX Code", "Visual Role", "Applied UI Context"),
-        ("--bg-primary", "#060610", "Deep Midnight", "Page root background, canvas base"),
-        ("--bg-secondary", "#0d0d1f", "Obsidian Navy", "Alternating section backgrounds"),
-        ("--bg-card", "rgba(18,18,38,0.65)", "Glass Surface", "Cards, project tiles, inputs"),
-        ("--purple", "#7c3aed", "Royal Violet", "Primary buttons, headers, gradients"),
-        ("--cyan", "#06b6d4", "Electric Cyan", "Accent glow, progress bar, focus outline"),
-        ("--text-primary", "#f8fafc", "Ghost White", "Primary titles and readable copy"),
-        ("--text-secondary", "#94a3b8", "Slate Gray", "Secondary descriptions, metadata"),
+    parts_grid = [
+        ("Header & Sticky Navbar", "Brand monogram 'MB' and responsive navigation links that collapse into a mobile drawer on narrow screens."),
+        ("Hero Introduction", "Dynamic typewriter headline, availability status indicator, CV download button, and direct social links."),
+        ("About Me & Highlights", "Academic profile (BSIT 3A WMAD, LSPU), optimized portrait photo, and 3 specialization highlight cards."),
+        ("Technical Skills", "Categorized skill pills separating core languages, frontend styling, tools, and AI dev environments."),
+        ("Featured Projects (WEB 6)", "Real-world works: Cake Ordering Platform, Queue Ordering System, and EduFlow Task Manager PWA."),
+        ("Certificates & Contact", "Verified cybersecurity/IT credentials plus an interactive Formspree contact form with live feedback."),
     ]
-    t_pal = doc.add_table(rows=len(palette), cols=4)
+
+    t_parts = doc.add_table(rows=3, cols=2)
+    t_parts.alignment = WD_TABLE_ALIGNMENT.CENTER
+    for idx, (pt_title, pt_desc) in enumerate(parts_grid):
+        r, c = divmod(idx, 2)
+        cell = t_parts.rows[r].cells[c]
+        cell.width = Inches(2.7)
+        set_cell_bg(cell, "F8FAFC")
+        set_cell_margins(cell, 70, 70, 90, 90)
+        set_cell_borders(cell, "CBD5E1", "4")
+        p = cell.paragraphs[0]
+        p.paragraph_format.space_after = Pt(0)
+        p.paragraph_format.line_spacing = 1.12
+        rt = p.add_run(pt_title + "\n")
+        rt.font.name, rt.font.size, rt.bold, rt.font.color.rgb = "Segoe UI", Pt(10.5), True, C_PURPLE
+        rd = p.add_run(pt_desc)
+        rd.font.name, rd.font.size, rd.font.color.rgb = "Segoe UI", Pt(9.5), C_DARK
+
+    doc.add_page_break()
+
+    # ══════════════════════════════════════════════════════════════════════
+    # PAGE 4: LOGO & COLOR PALETTE
+    # ══════════════════════════════════════════════════════════════════════
+    add_section_banner("Section 03", "Personal Logo & Color Palette")
+
+    add_callout_card(
+        "Personal Monogram Wordmark: 'MB' + Cyan Beacon",
+        "The navbar and browser favicon feature the bold 'MB' initials paired with an electric-cyan dot (#06B6D4), symbolizing availability and modern web craftsmanship."
+    )
+
+    add_subhead("Color Palette & HEX Application Table")
+    palette_rows = [
+        ("Swatch", "Token & HEX", "Where Applied in Portfolio"),
+        ("060610", "--bg-primary\n#060610", "Root page background & dark canvas base"),
+        ("0D0D1F", "--bg-secondary\n#0D0D1F", "Alternating section depth & subtle gradients"),
+        ("7C3AED", "--purple\n#7C3AED", "Primary CTA buttons, brand mark, active accents"),
+        ("06B6D4", "--cyan\n#06B6D4", "Focus-visible outline, scroll progress bar, status dot"),
+        ("F8FAFC", "--text-primary\n#F8FAFC", "Main headings & primary copy (18.2:1 contrast)"),
+        ("94A3B8", "--text-secondary\n#94A3B8", "Supporting paragraphs, labels & card metadata"),
+    ]
+    t_pal = doc.add_table(rows=len(palette_rows), cols=3)
     t_pal.alignment = WD_TABLE_ALIGNMENT.CENTER
-    for r_idx, row_vals in enumerate(palette):
-        row = t_pal.rows[r_idx]
-        for c_idx, val in enumerate(row_vals):
-            c = row.cells[c_idx]
-            set_cell_margins(c, 30, 30, 40, 40)
-            if r_idx == 0:
-                set_cell_background(c, "1E1B4B")
-            else:
-                set_cell_background(c, "F8FAFC" if r_idx % 2 == 0 else "FFFFFF")
-            p = c.paragraphs[0]
-            p.paragraph_format.space_after = Pt(1)
-            r = p.add_run(val)
-            r.font.size = Pt(8)
-            if r_idx == 0:
-                r.bold = True
-                r.font.color.rgb = RGBColor(255, 255, 255)
-            else:
-                r.font.color.rgb = C_DARK
-
-    add_body_p("Accessibility Check: The contrast ratio between Ghost White (#F8FAFC) and Deep Midnight (#060610) is 18.2:1, significantly exceeding the WCAG 2.1 AAA minimum requirement of 7:1 for normal text.", space_after=2)
+    for i, (sw, tok, where) in enumerate(palette_rows):
+        row = t_pal.rows[i]
+        c0, c1, c2 = row.cells[0], row.cells[1], row.cells[2]
+        c0.width, c1.width, c2.width = Inches(0.7), Inches(1.6), Inches(3.1)
+        for c in (c0, c1, c2):
+            set_cell_margins(c, 50, 50, 70, 70)
+            set_cell_borders(c, "CBD5E1", "4")
+        if i == 0:
+            for c, txt in zip((c0, c1, c2), (sw, tok, where)):
+                set_cell_bg(c, "0F172A")
+                p = c.paragraphs[0]
+                p.paragraph_format.space_after = Pt(0)
+                r = p.add_run(txt)
+                r.font.name, r.font.size, r.bold, r.font.color.rgb = "Segoe UI", Pt(9.5), True, C_WHITE
+        else:
+            set_cell_bg(c0, sw)
+            c0.paragraphs[0].paragraph_format.space_after = Pt(0)
+            set_cell_bg(c1, "F8FAFC")
+            set_cell_bg(c2, "FFFFFF")
+            p1 = c1.paragraphs[0]
+            p1.paragraph_format.space_after = Pt(0)
+            r1 = p1.add_run(tok)
+            r1.font.name, r1.font.size, r1.bold, r1.font.color.rgb = "Segoe UI", Pt(9), True, C_NAVY
+            p2 = c2.paragraphs[0]
+            p2.paragraph_format.space_after = Pt(0)
+            r2 = p2.add_run(where)
+            r2.font.name, r2.font.size, r2.font.color.rgb = "Segoe UI", Pt(9.5), C_DARK
 
     doc.add_page_break()
 
     # ══════════════════════════════════════════════════════════════════════
-    # PAGE 5: SECTION 4: DESKTOP & MOBILE FIGMA LAYOUTS
+    # PAGE 5: DESKTOP & MOBILE FIGMA DESIGNS
     # ══════════════════════════════════════════════════════════════════════
-    add_heading_1("4. Desktop & Mobile UI Layouts")
-    add_body_p("The interface was planned with a mobile-first philosophy before expanding into responsive multi-column layouts for tablets and wide-screen desktops. Below are verified captures of the deployed production website:")
+    add_section_banner("Section 04", "Desktop & Mobile Designs (Figma Alignment)")
+    add_body("Figma Prototype Link: https://www.figma.com/@hiddengemofbell", bold_prefix="Figma URL:")
 
-    # Embed Screenshots if available
-    desk_path = r'C:\Users\moral\OneDrive\Practice\basic-portfolio\assets\screenshots\desktop.png'
-    mob_path = r'C:\Users\moral\OneDrive\Practice\basic-portfolio\assets\screenshots\mobile.png'
+    desk_path = r"C:\Users\moral\OneDrive\Practice\basic-portfolio\assets\screenshots\desktop.png"
+    mob_path = r"C:\Users\moral\OneDrive\Practice\basic-portfolio\assets\screenshots\mobile.png"
 
-    t_screens = doc.add_table(rows=1, cols=2)
-    t_screens.alignment = WD_TABLE_ALIGNMENT.CENTER
-    cell_d, cell_m = t_screens.rows[0].cells[0], t_screens.rows[0].cells[1]
-    cell_d.width = Inches(3.4)
-    cell_m.width = Inches(2.0)
-    set_cell_margins(cell_d, 20, 20, 30, 30)
-    set_cell_margins(cell_m, 20, 20, 30, 30)
+    t_scr = doc.add_table(rows=1, cols=2)
+    t_scr.alignment = WD_TABLE_ALIGNMENT.CENTER
+    cd, cm = t_scr.rows[0].cells[0], t_scr.rows[0].cells[1]
+    cd.width, cm.width = Inches(3.45), Inches(1.95)
+    for c in (cd, cm):
+        set_cell_bg(c, "F8FAFC")
+        set_cell_margins(c, 50, 50, 50, 50)
+        set_cell_borders(c, "CBD5E1", "4")
 
-    p_d = cell_d.paragraphs[0]
-    p_d.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    pd = cd.paragraphs[0]
+    pd.alignment = WD_ALIGN_PARAGRAPH.CENTER
     if os.path.exists(desk_path):
-        p_d.add_run().add_picture(desk_path, width=Inches(3.2))
-    p_d_lbl = cell_d.add_paragraph()
-    p_d_lbl.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r_dl = p_d_lbl.add_run("Fig 4.1: Desktop View (1280px)")
-    r_dl.font.size = Pt(7.5)
-    r_dl.bold = True
+        pd.add_run().add_picture(desk_path, width=Inches(3.25))
+    pd_cap = cd.add_paragraph()
+    pd_cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    pd_cap.paragraph_format.space_after = Pt(0)
+    rdc = pd_cap.add_run("Fig 1. Desktop Layout (1280px)")
+    rdc.font.name, rdc.font.size, rdc.bold, rdc.font.color.rgb = "Segoe UI", Pt(9), True, C_NAVY
 
-    p_m = cell_m.paragraphs[0]
-    p_m.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    pm = cm.paragraphs[0]
+    pm.alignment = WD_ALIGN_PARAGRAPH.CENTER
     if os.path.exists(mob_path):
-        p_m.add_run().add_picture(mob_path, width=Inches(1.8))
-    p_m_lbl = cell_m.add_paragraph()
-    p_m_lbl.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r_ml = p_m_lbl.add_run("Fig 4.2: Mobile View (375px)")
-    r_ml.font.size = Pt(7.5)
-    r_ml.bold = True
+        pm.add_run().add_picture(mob_path, width=Inches(1.65))
+    pm_cap = cm.add_paragraph()
+    pm_cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    pm_cap.paragraph_format.space_after = Pt(0)
+    rmc = pm_cap.add_run("Fig 2. Mobile Layout (375px)")
+    rmc.font.name, rmc.font.size, rmc.bold, rmc.font.color.rgb = "Segoe UI", Pt(9), True, C_NAVY
 
-    add_heading_2("Figma to Code Alignment & Responsive Adaptations")
-    add_body_p("• Figma Workspace URL: https://www.figma.com/@hiddengemofbell")
-    add_body_p("• Navigation Shift: On desktop (1280px+), navigation links sit horizontally in a sticky blurred header. On mobile (<992px), links collapse into an accessible accordion drawer.")
-    add_body_p("• Grid Reorganization: Project and Skill cards adapt from 3 columns on desktop, to 2 columns on tablet (768px), and a clean single-column vertical card stack on mobile (375px), preventing unintended horizontal overflow.")
+    add_subhead("Design-to-Implementation Mapping")
+    add_body("Desktop multi-column project/contact grids collapse cleanly into single-column cards at 375px, while the horizontal navbar switches to a Bootstrap 5 toggle drawer.")
 
     doc.add_page_break()
 
     # ══════════════════════════════════════════════════════════════════════
-    # PAGE 6: SECTION 5: ASSETS, IMAGES & ATTRIBUTIONS
+    # PAGE 6: ASSETS & IMAGES
     # ══════════════════════════════════════════════════════════════════════
-    add_heading_1("5. Assets, Images and External Credits")
-    add_body_p("All digital media assets utilized in the portfolio were curated for visual consistency, optimized for minimal bandwidth consumption, and properly licensed:")
+    add_section_banner("Section 05", "Assets, Images & External Credits")
+    add_body("All visual assets are either original student work or properly credited open-source resources:")
 
-    assets_table_data = [
-        ("Asset Identifier", "Type / Format", "Source / Attribution", "Optimization Applied"),
-        ("profile.jpg", "Image (JPEG)", "Original photography by developer", "Resized to 360x360 web format; compressed from 6.6 MB to 68 KB (99% reduction)"),
-        ("Bootstrap Icons", "Vector Webfont", "Bootstrap Icons Library (MIT License)", "Loaded asynchronously via CDN with specific CSS unicode glyphs"),
-        ("Inter Font Family", "Web Typography", "Google Fonts (Rasmus Andersson, OFL)", "Preconnected DNS origins with modern woff2 subsets"),
-        ("maribel-bravo-cv.pdf", "Document (PDF)", "Authored by Maribel Bravo", "Compiled clean PDF with accessible text vectors"),
-        ("Formspree Endpoint", "REST Service", "Formspree Inc. (AJAX endpoint)", "Asynchronous fetch API without page reloads or third-party client trackers")
+    ast_rows = [
+        ("Asset File", "Origin / Credit", "Purpose & Optimization"),
+        ("assets/profile.jpg", "Original photo (Maribel Bravo)", "Developer portrait; compressed from 6.6 MB to 68 KB (99% smaller)."),
+        ("favicon.ico & favicon.svg", "Original vector design", "MB monogram tab icon & mobile home-screen shortcut."),
+        ("assets/maribel-bravo-cv.pdf", "Original authored CV", "Downloadable resume linked from the Hero CTA."),
+        ("Bootstrap 5.3.3 & Icons", "Bootstrap Team (MIT)", "Responsive grid system, navbar collapse, and UI icons."),
+        ("Inter Font Family", "Google Fonts (SIL OFL)", "Clean sans-serif typography across all viewports."),
+        ("Formspree API", "Formspree Inc.", "Handles Contact Me form submissions asynchronously."),
     ]
-
-    t_ast = doc.add_table(rows=len(assets_table_data), cols=4)
+    t_ast = doc.add_table(rows=len(ast_rows), cols=3)
     t_ast.alignment = WD_TABLE_ALIGNMENT.CENTER
-    for r_idx, row_vals in enumerate(assets_table_data):
-        row = t_ast.rows[r_idx]
-        for c_idx, val in enumerate(row_vals):
-            c = row.cells[c_idx]
-            set_cell_margins(c, 25, 25, 30, 30)
-            if r_idx == 0:
-                set_cell_background(c, "1E1B4B")
-            else:
-                set_cell_background(c, "F8FAFC" if r_idx % 2 == 0 else "FFFFFF")
+    for i, (f, o, p_txt) in enumerate(ast_rows):
+        row = t_ast.rows[i]
+        c0, c1, c2 = row.cells[0], row.cells[1], row.cells[2]
+        c0.width, c1.width, c2.width = Inches(1.55), Inches(1.55), Inches(2.3)
+        for c in (c0, c1, c2):
+            set_cell_margins(c, 45, 45, 60, 60)
+            set_cell_borders(c, "CBD5E1", "4")
+        bg = "0F172A" if i == 0 else ("F8FAFC" if i % 2 == 0 else "FFFFFF")
+        for idx_c, (c, txt) in enumerate(zip((c0, c1, c2), (f, o, p_txt))):
+            set_cell_bg(c, bg)
             p = c.paragraphs[0]
-            p.paragraph_format.space_after = Pt(1)
-            r = p.add_run(val)
-            r.font.size = Pt(7.5)
-            if r_idx == 0:
-                r.bold = True
-                r.font.color.rgb = RGBColor(255, 255, 255)
+            p.paragraph_format.space_after = Pt(0)
+            r = p.add_run(txt)
+            r.font.name = "Segoe UI"
+            r.font.size = Pt(9.5)
+            if i == 0:
+                r.bold, r.font.color.rgb = True, C_WHITE
+            elif idx_c == 0:
+                r.bold, r.font.color.rgb = True, C_PURPLE
             else:
                 r.font.color.rgb = C_DARK
-
-    add_body_p("Image Performance Optimization: Heavy uncompressed camera images severely degrade mobile loading speed. By processing the raw 6.6 MB portrait into a high-density 68 KB optimized asset, initial page load latency decreased from ~2.4s to under 180ms on 4G networks.", space_after=2)
 
     doc.add_page_break()
 
     # ══════════════════════════════════════════════════════════════════════
-    # PAGE 7: SECTION 6: TECHNOLOGY & JAVASCRIPT BREAKDOWN
+    # PAGE 7: TECHNOLOGY & INTERACTION
     # ══════════════════════════════════════════════════════════════════════
-    add_heading_1("6. Technology and Interaction Breakdown")
-    add_body_p("The portfolio is developed with standard web technologies adhering strictly to modern standards without bloated framework overhead:")
-    add_body_p("• Semantic HTML5: header, nav, main, section, footer, article, aria attributes.")
-    add_body_p("• CSS3 & Bootstrap 5.3.3: CSS custom variables, flexbox, grid, glassmorphism, focus indicators.")
-    add_body_p("• Vanilla JavaScript (ES6+): Asynchronous fetch API, IntersectionObserver, scroll handlers.")
+    add_section_banner("Section 06", "Technology Stack & JS Interactions")
+    add_body(
+        "Site Build Tools: Semantic HTML5, CSS3 Custom Properties, Bootstrap 5.3.3, and Vanilla ES6+ JavaScript (distinct from backend languages listed in my profile such as Python, Java, and PostgreSQL)."
+    )
 
-    add_heading_2("Interactive JavaScript Features (WEB 3 Specification)")
-    js_feats = [
-        ("Feature & Target", "DOM Event Trigger", "Implementation Logic", "Visible Output on Page"),
-        ("Typewriter Cycler (#typed-output)", "DOMContentLoaded & recursive setTimeout", "Iterates character-by-character through career keywords, deleting and updating dynamically", "Smooth animated typing and backspacing effect in the hero header"),
-        ("Scroll Reading Progress (#scroll-progress)", "window scroll event listener", "Calculates scrollY / (scrollHeight - innerHeight) * 100", "Top-anchored electric-cyan bar expands from 0% to 100% reading width"),
-        ("Navbar Scrolled State (.custom-navbar)", "window scroll threshold (>50px)", "Toggles .scrolled CSS class via classList.toggle()", "Navbar switches from transparent to frosted glassmorphism with subtle border"),
-        ("ScrollSpy Link Sync (.nav-link)", "IntersectionObserver (sections)", "Detects section intersection with rootMargin offset; toggles .active", "Current nav menu item highlights automatically as visitor scrolls through page"),
-        ("Scroll Reveal (.reveal elements)", "IntersectionObserver (threshold 0.12)", "Adds .active class when cards or text enter viewport", "Content cards smoothly translate upwards with subtle fade-in transition"),
-        ("Async Contact Form (#contact-form)", "form submit event listener", "Dispatches async fetch() POST to Formspree with button loading state", "Displays spinner then live success confirmation banner without page reload")
+    js_rows = [
+        ("Feature", "Trigger / Event", "Visible Result"),
+        ("Typewriter Hero", "DOMContentLoaded + setTimeout", "Cycles career roles letter-by-letter in hero subtitle."),
+        ("Scroll Progress Bar", "window 'scroll' event", "Top #scroll-progress bar fills 0% to 100% width."),
+        ("ScrollSpy Navbar", "IntersectionObserver", "Highlights active section link while scrolling."),
+        ("Scroll Reveal", "IntersectionObserver (12%)", "Cards fade and slide upward into view smoothly."),
+        ("Contact Form", "form 'submit' (fetch POST)", "Shows loading spinner, sends to Formspree, prints confirmation."),
     ]
-    t_js = doc.add_table(rows=len(js_feats), cols=4)
+    t_js = doc.add_table(rows=len(js_rows), cols=3)
     t_js.alignment = WD_TABLE_ALIGNMENT.CENTER
-    for r_idx, row_vals in enumerate(js_feats):
-        row = t_js.rows[r_idx]
-        for c_idx, val in enumerate(row_vals):
-            c = row.cells[c_idx]
-            set_cell_margins(c, 25, 25, 30, 30)
-            if r_idx == 0:
-                set_cell_background(c, "1E1B4B")
-            else:
-                set_cell_background(c, "F8FAFC" if r_idx % 2 == 0 else "FFFFFF")
+    for i, (ft, tr, res) in enumerate(js_rows):
+        row = t_js.rows[i]
+        c0, c1, c2 = row.cells[0], row.cells[1], row.cells[2]
+        c0.width, c1.width, c2.width = Inches(1.4), Inches(1.65), Inches(2.35)
+        for c in (c0, c1, c2):
+            set_cell_margins(c, 45, 45, 60, 60)
+            set_cell_borders(c, "CBD5E1", "4")
+        bg = "0F172A" if i == 0 else ("F8FAFC" if i % 2 == 0 else "FFFFFF")
+        for idx_c, (c, txt) in enumerate(zip((c0, c1, c2), (ft, tr, res))):
+            set_cell_bg(c, bg)
             p = c.paragraphs[0]
-            p.paragraph_format.space_after = Pt(1)
-            r = p.add_run(val)
-            r.font.size = Pt(7.5)
-            if r_idx == 0:
-                r.bold = True
-                r.font.color.rgb = RGBColor(255, 255, 255)
+            p.paragraph_format.space_after = Pt(0)
+            r = p.add_run(txt)
+            r.font.name, r.font.size = "Segoe UI", Pt(9.5)
+            if i == 0:
+                r.bold, r.font.color.rgb = True, C_WHITE
+            elif idx_c == 0:
+                r.bold, r.font.color.rgb = True, C_NAVY
             else:
                 r.font.color.rgb = C_DARK
 
     doc.add_page_break()
 
     # ══════════════════════════════════════════════════════════════════════
-    # PAGE 8: SECTION 7: REPOSITORY & DEPLOYMENT GUIDE
+    # PAGE 8: REPOSITORY & DEPLOYED WEBSITE
     # ══════════════════════════════════════════════════════════════════════
-    add_heading_1("7. Repository & Deployed Website")
-    add_body_p("The complete portfolio source code, documentation, and version history are hosted publicly on GitHub and deployed on GitHub Pages with continuous deployment:")
+    add_section_banner("Section 07", "GitHub Repository & Live Deployment")
 
-    add_body_p("https://github.com/hiddengemofbell/basic-portfolio", bold_prefix="• GitHub Repository URL:")
-    add_body_p("https://hiddengemofbell.github.io/basic-portfolio/", bold_prefix="• Deployed Live Website URL:")
+    add_callout_card(
+        "Public Links (Verified Accessible)",
+        "Deployed Site: https://hiddengemofbell.github.io/basic-portfolio/\n"
+        "GitHub Repo:   https://github.com/hiddengemofbell/basic-portfolio"
+    )
 
-    add_heading_2("Repository Directory & File Organization Guide")
-    add_body_p("1. index.html — Primary single-page entry point. Structures the semantic layout with accessible landmark containers (<header>, <nav>, <main id='main'>, <footer>) and links all styles and scripts.")
-    add_body_p("2. css/style.css — Contains the design token variables (:root), custom resets, glassmorphic UI card styles, responsive media queries, and high-visibility keyboard focus indicators.")
-    add_body_p("3. js/main.js — Houses all JavaScript interaction logic including typewriter effect, reading scrollbar, scrollspy, reveal observers, and Formspree AJAX handlers.")
-    add_body_p("4. assets/ — Stores optimized developer portrait (profile.jpg), CV document (maribel-bravo-cv.pdf), and responsive screenshots.")
-    add_body_p("5. README.md — Comprehensive markdown documentation with badges, requirements checklist, feature breakdown, and testing logs.")
-
-    add_heading_2("How to Clone and Run Locally")
-    add_body_p("1. Clone repository: git clone https://github.com/hiddengemofbell/basic-portfolio.git")
-    add_body_p("2. Navigate into folder: cd basic-portfolio")
-    add_body_p("3. Open with live preview: Use VS Code 'Live Server' extension or run 'python -m http.server 8000' and open http://localhost:8000 in any modern web browser.")
+    add_subhead("How to Open & Locate Main Files")
+    add_body("index.html — Semantic HTML5 entry page, SEO meta tags, and ARIA landmarks.", bold_prefix="•")
+    add_body("css/style.css — Design tokens (:root), responsive breakpoints, and :focus-visible styles.", bold_prefix="•")
+    add_body("js/main.js — Typewriter, scroll progress, ScrollSpy, reveal, and Formspree AJAX.", bold_prefix="•")
+    add_body("assets/ — Optimized profile.jpg (68 KB), favicon.svg, and maribel-bravo-cv.pdf.", bold_prefix="•")
+    add_body("README.md — Full project overview, Figma link, and acceptance testing summary.", bold_prefix="•")
 
     doc.add_page_break()
 
     # ══════════════════════════════════════════════════════════════════════
-    # PAGE 9: SECTION 8: LEARNING REFLECTION
+    # PAGE 9: LEARNING REFLECTION
     # ══════════════════════════════════════════════════════════════════════
-    add_heading_1("8. Learning Reflection")
-    add_body_p("Developing this personal portfolio as the culminating project for ITST 301 (Principles of Web Design) provided valuable insights into the balance between visual design aesthetics, engineering rigor, and universal accessibility.")
+    add_section_banner("Section 08", "Learning Reflection")
 
-    add_heading_2("The Challenge: High Visual Depth vs. Web Accessibility & Speed")
-    add_body_p("Initially, the primary challenge lay in implementing an immersive cyberpunk dark theme (featuring multi-layered radial orb glow effects, glassmorphic card backdrops, and interactive animations) while ensuring the website complied with strict WCAG 2.1 AA accessibility standards and loaded instantly across mobile devices.")
-    add_body_p("Early lighthouse audits revealed two major concerns: first, unoptimized multi-megabyte media assets created unacceptable First Contentful Paint (FCP) delays on simulated 4G connections. Second, relying solely on default browser focus outlines caused interactive elements to disappear against dark glass surfaces, failing keyboard navigation criteria.")
+    add_callout_card(
+        "Challenge: Balancing Dark Aesthetics with Speed & Accessibility",
+        "My initial high-resolution portrait (6.6 MB) slowed mobile page loads, and default browser focus outlines were hard to see against dark glassmorphic cards."
+    )
 
-    add_heading_2("Solution & Engineering Decisions")
-    add_body_p("1. Asset Pipeline Optimization: The raw 6.6 MB portrait was compressed and resized using Lanczos resampling into a lightweight 68 KB web-ready JPEG, decreasing payload size by 99% and dropping load times under 200ms.")
-    add_body_p("2. Visible Keyboard Focus System: Implemented a dedicated :focus-visible system using a luminous 2px solid cyan outline (--cyan: #06b6d4) with outline offset, ensuring keyboard users (Tab / Shift+Tab) can track navigation effortlessly.")
-    add_body_p("3. Semantic Landmarks: Enclosed all interactive sections in a distinct <main id='main'> wrapper and added a top-level .skip-to-content anchor, allowing assistive technologies to jump directly to page content.")
+    add_subhead("How I Addressed It")
+    add_body("I compressed the portrait image by 99% (down to 68 KB), added a keyboard skip-to-content link, wrapped all sections inside <main>, and styled a high-contrast 2px cyan :focus-visible ring across all interactive elements.")
 
-    add_heading_2("Core Takeaway")
-    add_body_p("This experience reinforced that professional web design transcends superficial decoration. True quality lies in building digital experiences that are simultaneously visually engaging, semantically correct, performant on low-bandwidth connections, and fully accessible to all individuals.")
+    add_subhead("What I Learned")
+    add_body("Good web design is not only visual styling—it requires semantic HTML5 structure, fast asset delivery, and keyboard accessibility so every visitor can navigate the site reliably.")
 
     doc.add_page_break()
 
     # ══════════════════════════════════════════════════════════════════════
-    # PAGE 10: ACCEPTANCE TESTS MATRIX (T01 - T06)
+    # PAGE 10: ACCEPTANCE TESTS (T01 - T06)
     # ══════════════════════════════════════════════════════════════════════
-    add_heading_1("9. Acceptance Tests Matrix (T01 – T06)")
-    add_body_p("The deployed website was rigorously verified across private browsing modes, various screen viewports, and assistive keyboard navigation. All checks yielded passing results:")
-
-    tests_data = [
-        ("Test", "Action & Expected Criteria", "Viewport / Method", "Actual Observed Result", "Status"),
-        ("T01", "Open deployed URL in incognito browser. All styles, fonts, and assets load without authentication.", "Desktop & Mobile (Incognito)", "Site loaded instantly; all CDN and local resources rendered without login requirements.", "PASS"),
-        ("T02", "Navigate main sections, test CV download, project repositories, and social links.", "Interactive Click Audit", "All internal anchor smooth scrolls and external links routed to exact destinations.", "PASS"),
-        ("T03", "Inspect responsiveness at 375px (Mobile), 768px (Tablet), and 1280px (Desktop). No horizontal scroll.", "Chrome DevTools Device Mode", "Fluid reflow across all breakpoints; images scaled proportionally; zero unintended overflow.", "PASS"),
-        ("T04", "Trigger JavaScript typewriter, reading scrollbar, and AJAX contact form.", "User Interaction Testing", "Typewriter looped smoothly; scrollbar tracked page depth; form confirmed submission without refresh.", "PASS"),
-        ("T05", "Navigate interface using Tab, Shift+Tab, and Enter. Verify visible focus outline and skip link.", "Keyboard-only Navigation", "High-contrast cyan focus ring clearly visible on all interactive controls; skip link functioned.", "PASS"),
-        ("T06", "Verify GitHub repository, README documentation, Figma designs, and printed booklet format.", "Documentation & Source Audit", "Repository includes source code, assets, and comprehensive README; booklet formatted to spec.", "PASS")
+    add_section_banner("Section 09", "Acceptance Tests Matrix (T01 – T06)")
+    tests_rows = [
+        ("ID", "Action & Screen Size", "Expected & Actual Result", "Status"),
+        ("T01", "Private browser (Desktop)", "Site loads with styles & images without login.", "PASS"),
+        ("T02", "Click all nav & project links", "All section anchors & GitHub links match labels.", "PASS"),
+        ("T03", "375px, 768px, 1280px widths", "Usable nav, fitting images, no horizontal scroll.", "PASS"),
+        ("T04", "Trigger JS features repeatedly", "Typewriter, progress bar & form work reliably.", "PASS"),
+        ("T05", "Tab / Shift+Tab keyboard nav", "Visible cyan focus ring, skip link & alt text.", "PASS"),
+        ("T06", "GitHub, Figma & Booklet check", "Repo, README, Figma & 12-p booklet verified.", "PASS"),
     ]
-
-    t_tst = doc.add_table(rows=len(tests_data), cols=5)
+    t_tst = doc.add_table(rows=len(tests_rows), cols=4)
     t_tst.alignment = WD_TABLE_ALIGNMENT.CENTER
-    for r_idx, row_vals in enumerate(tests_data):
-        row = t_tst.rows[r_idx]
-        for c_idx, val in enumerate(row_vals):
-            c = row.cells[c_idx]
-            set_cell_margins(c, 25, 25, 30, 30)
-            if r_idx == 0:
-                set_cell_background(c, "1E1B4B")
-            else:
-                set_cell_background(c, "F8FAFC" if r_idx % 2 == 0 else "FFFFFF")
+    for i, (tid, act, res, st) in enumerate(tests_rows):
+        row = t_tst.rows[i]
+        c0, c1, c2, c3 = row.cells[0], row.cells[1], row.cells[2], row.cells[3]
+        c0.width, c1.width, c2.width, c3.width = Inches(0.55), Inches(1.8), Inches(2.4), Inches(0.65)
+        for c in (c0, c1, c2, c3):
+            set_cell_margins(c, 45, 45, 50, 50)
+            set_cell_borders(c, "CBD5E1", "4")
+        bg = "0F172A" if i == 0 else ("F8FAFC" if i % 2 == 0 else "FFFFFF")
+        for idx_c, (c, txt) in enumerate(zip((c0, c1, c2, c3), (tid, act, res, st))):
+            set_cell_bg(c, bg)
             p = c.paragraphs[0]
-            p.paragraph_format.space_after = Pt(1)
-            r = p.add_run(val)
-            r.font.size = Pt(7.5)
-            if r_idx == 0:
-                r.bold = True
-                r.font.color.rgb = RGBColor(255, 255, 255)
-            elif c_idx == 4:
-                r.bold = True
-                r.font.color.rgb = RGBColor(22, 101, 52)
+            p.paragraph_format.space_after = Pt(0)
+            r = p.add_run(txt)
+            r.font.name, r.font.size = "Segoe UI", Pt(9.5)
+            if i == 0:
+                r.bold, r.font.color.rgb = True, C_WHITE
+            elif idx_c == 3:
+                r.bold, r.font.color.rgb = True, RGBColor(22, 101, 52)
+            elif idx_c == 0:
+                r.bold, r.font.color.rgb = True, C_PURPLE
             else:
                 r.font.color.rgb = C_DARK
 
     doc.add_page_break()
 
     # ══════════════════════════════════════════════════════════════════════
-    # PAGE 11: TABLE OF SPECIFICATIONS & RUBRIC
+    # PAGE 11: RUBRIC & TABLE OF SPECIFICATIONS
     # ══════════════════════════════════════════════════════════════════════
-    add_heading_1("10. Table of Specifications & Appendix A")
-    add_body_p("The final portfolio project is assessed against four equally weighted criteria totaling 100 points:")
-
-    rubric_summary = [
-        ("Criterion", "Learning Outcome & Evidence Required", "Max Pts", "Self"),
-        ("Subject Matter", "Applies semantic HTML5, CSS3, Bootstrap 5, responsive design, and JavaScript. Explains event, code, and visible result. (WEB 1–4, T03–05).", "25", "25"),
-        ("Creativity", "Personal branding, monogram wordmark, cohesive palette, and visual hierarchy across desktop and mobile screens. (Figma & UI implementation).", "25", "25"),
-        ("Final Product", "Published portfolio loads cleanly, links function, responsive layout works without horizontal scroll, JS features operate reliably. (WEB 1–5, T01–05).", "25", "25"),
-        ("Structure & Flow", "Organized code, accessible repository, descriptive README, Figma link, folded IPT2 manual and matching PDF, reflection. (T06).", "25", "25"),
-        ("TOTAL", "Culminating Project Assessment Score across all criteria", "100", "100/100")
+    add_section_banner("Appendix A", "Evaluation Rubric & Specifications")
+    rub_rows = [
+        ("Criterion", "Evidence Evaluated", "Max", "Score"),
+        ("Subject Matter", "Semantic HTML5, CSS, Bootstrap 5, JS event/result (WEB 1–4).", "25", "___"),
+        ("Creativity", "Personal MB logo, palette, Figma hierarchy & UI assets.", "25", "___"),
+        ("Final Product", "Published site, navigation, responsive views, JS checks (T01–05).", "25", "___"),
+        ("Structure & Flow", "README, GitHub history, Figma link, folded manual & PDF (T06).", "25", "___"),
+        ("TOTAL", "Combined Final Project Rating", "100", "___ / 100"),
     ]
-
-    t_rub = doc.add_table(rows=len(rubric_summary), cols=4)
+    t_rub = doc.add_table(rows=len(rub_rows), cols=4)
     t_rub.alignment = WD_TABLE_ALIGNMENT.CENTER
-    for r_idx, row_vals in enumerate(rubric_summary):
-        row = t_rub.rows[r_idx]
-        for c_idx, val in enumerate(row_vals):
-            c = row.cells[c_idx]
-            set_cell_margins(c, 25, 25, 30, 30)
-            if r_idx == 0:
-                set_cell_background(c, "1E1B4B")
-            elif r_idx == len(rubric_summary) - 1:
-                set_cell_background(c, "E2E8F0")
-            else:
-                set_cell_background(c, "F8FAFC" if r_idx % 2 == 0 else "FFFFFF")
+    for i, (cr, ev, mx, sc) in enumerate(rub_rows):
+        row = t_rub.rows[i]
+        c0, c1, c2, c3 = row.cells[0], row.cells[1], row.cells[2], row.cells[3]
+        c0.width, c1.width, c2.width, c3.width = Inches(1.25), Inches(2.75), Inches(0.55), Inches(0.85)
+        for c in (c0, c1, c2, c3):
+            set_cell_margins(c, 50, 50, 55, 55)
+            set_cell_borders(c, "CBD5E1", "4")
+        bg = "0F172A" if i == 0 else ("E2E8F0" if i == len(rub_rows) - 1 else ("F8FAFC" if i % 2 == 0 else "FFFFFF"))
+        for idx_c, (c, txt) in enumerate(zip((c0, c1, c2, c3), (cr, ev, mx, sc))):
+            set_cell_bg(c, bg)
             p = c.paragraphs[0]
-            p.paragraph_format.space_after = Pt(1)
-            r = p.add_run(val)
-            r.font.size = Pt(8)
-            if r_idx == 0 or r_idx == len(rubric_summary) - 1:
-                r.bold = True
-                if r_idx == 0:
-                    r.font.color.rgb = RGBColor(255, 255, 255)
-                else:
-                    r.font.color.rgb = C_NAVY
+            p.paragraph_format.space_after = Pt(0)
+            r = p.add_run(txt)
+            r.font.name, r.font.size = "Segoe UI", Pt(9.5)
+            if i == 0:
+                r.bold, r.font.color.rgb = True, C_WHITE
+            elif i == len(rub_rows) - 1 or idx_c == 0:
+                r.bold, r.font.color.rgb = True, C_NAVY
             else:
                 r.font.color.rgb = C_DARK
 
-    add_heading_2("Instructor Evaluation & Remarks")
-    add_body_p("Evaluator Name: _______________________________   Signature: ___________________")
-    add_body_p("Final Evaluated Score: _________ / 100            Date: ________________________")
+    add_subhead("Evaluator Sign-Off")
+    add_body("Instructor: Prof. Julius A. Derla    Date: _______________", space_after=2)
 
     doc.add_page_break()
 
     # ══════════════════════════════════════════════════════════════════════
-    # PAGE 12: BACK COVER & VERIFICATION CHECKLIST
+    # PAGE 12: BACK COVER / BOOKLET PRINT CHECKLIST
     # ══════════════════════════════════════════════════════════════════════
-    add_heading_1("11. Submission & Booklet Verification")
-    add_body_p("Before submitting and presenting during the live demonstration, verify all submission specifications:")
+    add_section_banner("Back Cover", "IPT2 Booklet Format & Print Checklist")
 
-    checklist_items = [
-        ("Long Bond Paper (8.5 × 13 inches):", "Printed on standard Philippine folio/legal bond paper on both sides (duplex)."),
-        ("Center Landscape Fold:", "Sheet folded at center to form finished 6.5 × 8.5 inch portrait booklet."),
-        ("Booklet Page Imposition:", "Pages read sequentially (1 through 12) after folding and binding along the spine."),
-        ("Multiple of Four (12 Pages):", "Total page count equals 12 pages, satisfying the strict 4n imposition requirement."),
-        ("Legible Typography & Margins:", "Body font set to 9.5–11 pt with clear 0.5-inch margins around fold."),
-        ("Public Web Deployment Active:", "GitHub Pages site verified live, responsive, and accessible without login barriers."),
-        ("Source Code & README:", "GitHub repository fully synced with comprehensive markdown documentation.")
+    checks = [
+        ("Paper Size:", "Long bond paper (8.5 × 13 inches), printed duplex (both sides)."),
+        ("Fold & Size:", "Landscape sheet folded in half → 6.5 × 8.5 inch portrait booklet."),
+        ("Imposition:", "12 pages total (multiple of 4); reads Pages 1–12 sequentially."),
+        ("Typography:", "11 pt readable body text, 0.5–0.6 in margins clear of the fold."),
+        ("Assembly:", "Align all 3 sheets, fold at center, and staple along the spine."),
     ]
-
-    for title, desc in checklist_items:
-        add_body_p(desc, bold_prefix="[✔] " + title, space_after=3)
+    for k, v in checks:
+        add_body(v, bold_prefix="[✔] " + k, space_after=4)
 
     p_end = doc.add_paragraph()
     p_end.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_end.paragraph_format.space_before = Pt(35)
-    r_end1 = p_end.add_run("ITST 301 Principles of Web Design\nBSIT 3A WMAD · College of Computer Studies\nLaguna State Polytechnic University (Siniloan Campus)\n")
-    r_end1.bold = True
-    r_end1.font.size = Pt(8.5)
-    r_end1.font.color.rgb = C_NAVY
+    p_end.paragraph_format.space_before = Pt(40)
+    re1 = p_end.add_run("Maribel Bravo  •  BSIT 3A WMAD\n")
+    re1.font.name, re1.font.size, re1.bold, re1.font.color.rgb = "Segoe UI", Pt(11), True, C_PURPLE
+    re2 = p_end.add_run("Laguna State Polytechnic University – Siniloan Campus\nCollege of Computer Studies  •  2026")
+    re2.font.name, re2.font.size, re2.font.color.rgb = "Segoe UI", Pt(9.5), C_GRAY
 
-    r_end2 = p_end.add_run("© 2026 Maribel Bravo. All rights reserved.")
-    r_end2.font.size = Pt(8)
-    r_end2.font.color.rgb = C_GRAY
-
-    # Save to both locations
-    out_dl = r'C:\Users\moral\Downloads\ITST_301_Personal_Portfolio_Manual_Maribel_Bravo.docx'
-    out_repo = r'C:\Users\moral\OneDrive\Practice\basic-portfolio\ITST_301_Personal_Portfolio_Manual_Maribel_Bravo.docx'
-    
+    out_dl = r"C:\Users\moral\Downloads\ITST_301_Personal_Portfolio_Manual_Maribel_Bravo.docx"
+    out_repo = r"C:\Users\moral\OneDrive\Practice\basic-portfolio\ITST_301_Personal_Portfolio_Manual_Maribel_Bravo.docx"
     doc.save(out_dl)
     doc.save(out_repo)
-    print(f"Saved DOCX to: {out_dl}")
-    print(f"Saved DOCX to: {out_repo}")
 
-    # Convert to PDF via Word COM
-    try:
-        word = win32com.client.Dispatch('Word.Application')
-        word.Visible = False
-        doc_com = word.Documents.Open(os.path.abspath(out_dl))
-        pdf_dl = r'C:\Users\moral\Downloads\ITST_301_Personal_Portfolio_Manual_Maribel_Bravo.pdf'
-        pdf_repo = r'C:\Users\moral\OneDrive\Practice\basic-portfolio\ITST_301_Personal_Portfolio_Manual_Maribel_Bravo.pdf'
-        # 17 is wdFormatPDF
-        doc_com.SaveAs(os.path.abspath(pdf_dl), FileFormat=17)
-        doc_com.SaveAs(os.path.abspath(pdf_repo), FileFormat=17)
-        doc_com.Close()
-        word.Quit()
-        print(f"Successfully generated PDF: {pdf_dl}")
-        print(f"Successfully generated PDF: {pdf_repo}")
-    except Exception as e:
-        print("PDF conversion note:", e)
+    # Export sequential PDF via Word COM
+    word = win32com.client.Dispatch("Word.Application")
+    word.Visible = False
+    doc_com = word.Documents.Open(os.path.abspath(out_dl))
+    pdf_dl = r"C:\Users\moral\Downloads\ITST_301_Personal_Portfolio_Manual_Maribel_Bravo.pdf"
+    pdf_repo = r"C:\Users\moral\OneDrive\Practice\basic-portfolio\ITST_301_Personal_Portfolio_Manual_Maribel_Bravo.pdf"
+    doc_com.SaveAs(os.path.abspath(pdf_dl), FileFormat=17)
+    doc_com.SaveAs(os.path.abspath(pdf_repo), FileFormat=17)
+    doc_com.Close()
+    word.Quit()
 
-if __name__ == '__main__':
-    create_manual()
+    # Impose onto 8.5 x 13 inch Landscape sheets (13 in wide x 8.5 in tall)
+    impose_booklet(
+        pdf_dl,
+        r"C:\Users\moral\Downloads\ITST_301_Brochure_Booklet_PRINT_READY_8.5x13.pdf",
+    )
+    impose_booklet(
+        pdf_dl,
+        r"C:\Users\moral\OneDrive\Practice\basic-portfolio\ITST_301_Brochure_Booklet_PRINT_READY_8.5x13.pdf",
+    )
+
+
+def impose_booklet(src_pdf_path, dst_pdf_path):
+    """Impose sequential 6.5x8.5 pages onto 13x8.5 landscape sheets for duplex center-fold."""
+    reader = PdfReader(src_pdf_path)
+    n = len(reader.pages)
+    # Pad to multiple of 4 if needed
+    pad = (4 - (n % 4)) % 4
+    total = n + pad
+
+    writer = PdfWriter()
+    sheet_w = 13.0 * 72.0   # 936 pt
+    sheet_h = 8.5 * 72.0    # 612 pt
+    half_w = 6.5 * 72.0     # 468 pt
+
+    # Saddle-stitch booklet pairs: (left_idx, right_idx) 0-based
+    for i in range(total // 4):
+        # Front of sheet: [total - 1 - 2*i, 2*i]
+        # Back of sheet:  [2*i + 1, total - 2 - 2*i]
+        pairs = [
+            (total - 1 - 2 * i, 2 * i),
+            (2 * i + 1, total - 2 - 2 * i),
+        ]
+        for left_i, right_i in pairs:
+            sheet = PageObject.create_blank_page(width=sheet_w, height=sheet_h)
+            if left_i < n:
+                sheet.merge_transformed_page(
+                    reader.pages[left_i],
+                    Transformation().translate(0, 0),
+                )
+            if right_i < n:
+                sheet.merge_transformed_page(
+                    reader.pages[right_i],
+                    Transformation().translate(half_w, 0),
+                )
+            writer.add_page(sheet)
+
+    with open(dst_pdf_path, "wb") as f:
+        writer.write(f)
+    print(f"Imposed print-ready 13x8.5 booklet PDF ({len(writer.pages)} sides / {len(writer.pages)//2} sheets): {dst_pdf_path}")
+
+
+if __name__ == "__main__":
+    create_brochure_manual()
