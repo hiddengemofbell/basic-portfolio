@@ -448,13 +448,6 @@ body::before {
   margin-bottom: 3rem;
 }
 
-.sec-title-gradient {
-  background: var(--grad-text);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
 .divider {
   height: 1px;
   background: linear-gradient(
@@ -478,17 +471,6 @@ body::before {
   overflow: hidden;
   position: relative;
   backdrop-filter: blur(10px);
-}
-
-.about-wrap::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--grad-primary);
-  z-index: 2;
 }
 
 .about-avatar-container {
