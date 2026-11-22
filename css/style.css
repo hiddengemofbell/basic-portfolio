@@ -31,6 +31,40 @@
   padding: 0;
 }
 
+/* Accessibility: Skip to Content Link */
+.skip-to-content {
+  position: fixed;
+  top: -100px;
+  left: 20px;
+  background: var(--purple);
+  color: #ffffff;
+  padding: 12px 20px;
+  z-index: 99999;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  transition: top 0.25s ease-in-out;
+}
+.skip-to-content:focus {
+  top: 20px;
+  outline: 2px solid var(--cyan);
+}
+
+/* Visible Focus Indicator (WEB 4 / T05 Accessibility Compliance) */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+.btn-cta-primary:focus-visible,
+.btn-cta-secondary:focus-visible,
+.social-icon:focus-visible,
+.skill-pill:focus-visible {
+  outline: 2px solid var(--cyan) !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 10px var(--cyan-glow) !important;
+}
+
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 80px;

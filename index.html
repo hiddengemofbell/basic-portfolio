@@ -25,115 +25,122 @@
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
+    <!-- Accessibility: Skip to Main Content (WEB 4) -->
+    <a href="#main" class="skip-to-content">Skip to main content</a>
+
     <!-- Top Scroll Progress Bar -->
     <div id="scroll-progress"></div>
 
-    <!-- NAVBAR -->
-    <nav class="navbar navbar-expand-lg custom-navbar">
-      <div class="container">
-        <a class="nav-brand" href="#">
-          <span class="nav-brand-logo">MB</span>
-          <span class="nav-brand-dot"></span>
-        </a>
-        <button
-          class="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarContent"
-          aria-controls="navbarContent"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
-        >
-          <i class="bi bi-list"></i>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarContent">
-          <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-            <li class="nav-item">
-              <a class="nav-link" href="#about">About</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#skills">Skills</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#works">Projects</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#certificates">Certificates</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#contact">Contact</a>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </nav>
-
-    <!-- HERO SECTION -->
-    <section class="hero" id="home">
-      <div class="orb orb-1"></div>
-      <div class="orb orb-2"></div>
-      <div class="orb orb-3"></div>
-
-      <div class="container position-relative" style="z-index: 2">
-        <div class="hero-tag-wrap reveal">
-          <span class="pulse-dot"></span>
-          <span class="hero-tag">Available for Opportunities</span>
-        </div>
-
-        <h1 class="hero-name reveal">Maribel Bravo</h1>
-
-        <p class="hero-sub reveal">
-          Student &amp;
-          <span class="typed-text" id="typed-output"></span><span class="cursor">|</span>
-          <br />
-          Passionate about crafting elegant solutions with clean, purposeful code.
-        </p>
-
-        <div class="hero-cta-group reveal">
-          <a href="assets/maribel-bravo-cv.pdf" class="btn-cta-primary" download>
-            <i class="bi bi-file-earmark-arrow-down-fill"></i> Download CV
+    <!-- HEADER & NAVBAR (WEB 1: Semantic HTML5) -->
+    <header class="site-header">
+      <nav class="navbar navbar-expand-lg custom-navbar" aria-label="Main Navigation">
+        <div class="container">
+          <a class="nav-brand" href="#home" aria-label="Maribel Bravo Home">
+            <span class="nav-brand-logo">MB</span>
+            <span class="nav-brand-dot"></span>
           </a>
-          <a href="#contact" class="btn-cta-secondary">
-            <i class="bi bi-chat-dots-fill"></i> Let's Connect
-          </a>
-        </div>
-
-        <div class="hero-socials reveal">
-          <a
-            href="https://github.com/your-username"
-            class="social-icon"
-            target="_blank"
-            rel="noopener"
-            aria-label="GitHub Profile"
-            title="GitHub"
+          <button
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarContent"
+            aria-controls="navbarContent"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
           >
-            <i class="bi bi-github"></i>
-          </a>
-          <a
-            href="https://linkedin.com/in/your-username"
-            class="social-icon"
-            target="_blank"
-            rel="noopener"
-            aria-label="LinkedIn Profile"
-            title="LinkedIn"
-          >
-            <i class="bi bi-linkedin"></i>
-          </a>
-          <a
-            href="mailto:your-email@example.com"
-            class="social-icon"
-            aria-label="Email Me"
-            title="Email"
-          >
-            <i class="bi bi-envelope-fill"></i>
-          </a>
+            <i class="bi bi-list"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarContent">
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+              <li class="nav-item">
+                <a class="nav-link" href="#about">About</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#skills">Skills</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#works">Projects</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#certificates">Certificates</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#contact">Contact</a>
+              </li>
+            </ul>
+          </div>
         </div>
-      </div>
-    </section>
+      </nav>
+    </header>
+
+    <!-- MAIN CONTENT WRAPPER (WEB 1: Semantic HTML5) -->
+    <main id="main">
+      <!-- HERO SECTION -->
+      <section class="hero" id="home" aria-label="Hero Introduction">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+
+        <div class="container position-relative" style="z-index: 2">
+          <div class="hero-tag-wrap reveal">
+            <span class="pulse-dot"></span>
+            <span class="hero-tag">Available for Opportunities</span>
+          </div>
+
+          <h1 class="hero-name reveal">Maribel Bravo</h1>
+
+          <p class="hero-sub reveal">
+            Student &amp;
+            <span class="typed-text" id="typed-output"></span><span class="cursor">|</span>
+            <br />
+            Passionate about crafting elegant solutions with clean, purposeful code.
+          </p>
+
+          <div class="hero-cta-group reveal">
+            <a href="assets/maribel-bravo-cv.pdf" class="btn-cta-primary" download="Maribel_Bravo_CV.pdf" aria-label="Download Maribel Bravo Curriculum Vitae">
+              <i class="bi bi-file-earmark-arrow-down-fill"></i> Download CV
+            </a>
+            <a href="#contact" class="btn-cta-secondary" aria-label="Navigate to contact section">
+              <i class="bi bi-chat-dots-fill"></i> Let's Connect
+            </a>
+          </div>
+
+          <div class="hero-socials reveal">
+            <a
+              href="https://github.com/hiddengemofbell"
+              class="social-icon"
+              target="_blank"
+              rel="noopener"
+              aria-label="GitHub Profile (opens in new tab)"
+              title="GitHub"
+            >
+              <i class="bi bi-github"></i>
+            </a>
+            <a
+              href="https://www.linkedin.com/in/maribel-bravo-876655374"
+              class="social-icon"
+              target="_blank"
+              rel="noopener"
+              aria-label="LinkedIn Profile (opens in new tab)"
+              title="LinkedIn"
+            >
+              <i class="bi bi-linkedin"></i>
+            </a>
+            <a
+              href="mailto:moralesmaribel262@gmail.com"
+              class="social-icon"
+              aria-label="Send email to Maribel Bravo"
+              title="Email"
+            >
+              <i class="bi bi-envelope-fill"></i>
+            </a>
+          </div>
+        </div>
+      </section>
 
     <!-- ABOUT SECTION -->
     <div class="divider"></div>
-    <section class="sec" id="about">
+    <section class="sec" id="about" aria-label="About Maribel Bravo">
       <div class="container">
         <p class="sec-label reveal"><i class="bi bi-person-fill"></i> Who I Am</p>
         <h2 class="sec-title reveal">About Me</h2>
@@ -141,36 +148,36 @@
         <div class="about-wrap reveal">
           <div class="about-avatar-container">
             <div class="about-avatar">
-              <img src="assets/profile.JPG" alt="Maribel Bravo" />
+              <img src="assets/profile.jpg" alt="Professional portrait of Maribel Bravo, Web Developer and IT Student" width="360" height="360" loading="lazy" />
             </div>
           </div>
 
           <div class="about-text">
             <p>
-              Hello! I'm <strong>Maribel Bravo</strong>, a dedicated student and developer with an enthusiastic drive for technology, problem-solving, and continuous learning.
+              Hello! I'm <strong>Maribel Bravo</strong>, a 3rd-year <strong>Bachelor of Science in Information Technology</strong> student majoring in <strong>Web and Mobile Application Development (BSIT 3A WMAD)</strong> at <strong>Laguna State Polytechnic University (Siniloan Campus)</strong>.
             </p>
             <p>
-              I take pride in translating complex concepts into functional, visually appealing digital experiences — from architecting backend logic to crafting seamless user interfaces.
+              I take pride in translating complex concepts into functional, visually appealing, and highly accessible digital experiences — from architecting backend logic and database workflows to crafting seamless, responsive user interfaces.
             </p>
             <p>
-              Currently, I am deepening my expertise in <strong>Python, Java, and modern web technologies</strong> while exploring new tools and software engineering best practices.
+              Currently, I am deepening my expertise in <strong>HTML5, CSS3, Bootstrap 5, JavaScript, Python (Flask), and PostgreSQL</strong> while adhering to software engineering best practices, semantic web standards, and user-centered design principles.
             </p>
 
             <div class="about-highlights">
               <div class="highlight-card">
                 <div class="highlight-icon"><i class="bi bi-mortarboard-fill"></i></div>
-                <div class="highlight-title">Focus</div>
-                <div class="highlight-value">Full-Stack Dev</div>
+                <div class="highlight-title">Academic Track</div>
+                <div class="highlight-value">BSIT 3A WMAD (LSPU)</div>
               </div>
               <div class="highlight-card">
                 <div class="highlight-icon"><i class="bi bi-code-square"></i></div>
-                <div class="highlight-title">Core Skills</div>
-                <div class="highlight-value">Python &amp; Web</div>
+                <div class="highlight-title">Specialization</div>
+                <div class="highlight-value">Full-Stack &amp; Web Design</div>
               </div>
               <div class="highlight-card">
                 <div class="highlight-icon"><i class="bi bi-geo-alt-fill"></i></div>
                 <div class="highlight-title">Location</div>
-                <div class="highlight-value">Open to Remote</div>
+                <div class="highlight-value">Laguna, Philippines</div>
               </div>
             </div>
           </div>
@@ -239,15 +246,15 @@
       </div>
     </section>
 
-    <!-- PROJECTS / SAMPLE WORKS -->
+    <!-- PROJECTS / SAMPLE WORKS (WEB 6: Existing Project Samples) -->
     <div class="divider"></div>
-    <section class="sec" id="works">
+    <section class="sec" id="works" aria-label="Featured Projects">
       <div class="container">
         <p class="sec-label reveal"><i class="bi bi-grid-fill"></i> Portfolio</p>
         <h2 class="sec-title reveal">Featured Projects</h2>
 
         <div class="works-grid">
-          <!-- Project 1 -->
+          <!-- Project 1: Cake Ordering System -->
           <div class="work-card reveal">
             <div class="work-header">
               <div class="work-window-dots">
@@ -259,26 +266,26 @@
             </div>
             <div class="work-body">
               <div class="work-tags">
-                <span class="work-tag">Python</span>
-                <span class="work-tag">Flask</span>
-                <span class="work-tag">Bootstrap</span>
+                <span class="work-tag">Python (Flask)</span>
+                <span class="work-tag">PostgreSQL</span>
+                <span class="work-tag">Tailwind</span>
               </div>
-              <h3>Project Title One</h3>
+              <h3>Cake Ordering &amp; Bakery Platform</h3>
               <p>
-                A dynamic web application featuring clean architecture, responsive UI components, and integrated backend API endpoints.
+                Full-stack bakery e-commerce web application. Designed database schema, authentication, customer orders, and Cloudinary image pipelines.
               </p>
               <div class="work-links">
-                <a href="#" class="work-btn work-btn-primary" target="_blank" rel="noopener">
+                <a href="https://github.com/hiddengemofbell" class="work-btn work-btn-primary" target="_blank" rel="noopener" aria-label="View Cake Ordering System demo">
                   <i class="bi bi-box-arrow-up-right"></i> Demo
                 </a>
-                <a href="#" class="work-btn work-btn-outline" target="_blank" rel="noopener">
+                <a href="https://github.com/hiddengemofbell" class="work-btn work-btn-outline" target="_blank" rel="noopener" aria-label="View Cake Ordering System source code on GitHub">
                   <i class="bi bi-github"></i> Code
                 </a>
               </div>
             </div>
           </div>
 
-          <!-- Project 2 -->
+          <!-- Project 2: Queue Ordering System -->
           <div class="work-card reveal">
             <div class="work-header">
               <div class="work-window-dots">
@@ -290,26 +297,26 @@
             </div>
             <div class="work-body">
               <div class="work-tags">
-                <span class="work-tag">HTML5 / CSS3</span>
-                <span class="work-tag">JavaScript</span>
-                <span class="work-tag">UI/UX</span>
+                <span class="work-tag">Node.js</span>
+                <span class="work-tag">Server-Sent Events</span>
+                <span class="work-tag">HTML5 / JS</span>
               </div>
-              <h3>Project Title Two</h3>
+              <h3>Real-Time Queue Ordering System</h3>
               <p>
-                An interactive web platform designed with a modern dark aesthetic, smooth micro-interactions, and high performance.
+                High-concurrency order queue backend streaming live status updates and positions to customers via Server-Sent Events (SSE) with zero client polling.
               </p>
               <div class="work-links">
-                <a href="#" class="work-btn work-btn-primary" target="_blank" rel="noopener">
+                <a href="https://github.com/hiddengemofbell" class="work-btn work-btn-primary" target="_blank" rel="noopener" aria-label="View Queue Ordering System demo">
                   <i class="bi bi-box-arrow-up-right"></i> Demo
                 </a>
-                <a href="#" class="work-btn work-btn-outline" target="_blank" rel="noopener">
+                <a href="https://github.com/hiddengemofbell" class="work-btn work-btn-outline" target="_blank" rel="noopener" aria-label="View Queue Ordering System source code on GitHub">
                   <i class="bi bi-github"></i> Code
                 </a>
               </div>
             </div>
           </div>
 
-          <!-- Project 3 -->
+          <!-- Project 3: EduFlow Task Manager -->
           <div class="work-card reveal">
             <div class="work-header">
               <div class="work-window-dots">
@@ -321,19 +328,19 @@
             </div>
             <div class="work-body">
               <div class="work-tags">
-                <span class="work-tag">Java</span>
-                <span class="work-tag">OOP</span>
-                <span class="work-tag">Algorithms</span>
+                <span class="work-tag">React / Vite</span>
+                <span class="work-tag">Supabase</span>
+                <span class="work-tag">Tailwind PWA</span>
               </div>
-              <h3>Project Title Three</h3>
+              <h3>EduFlow: Academic Task Manager</h3>
               <p>
-                A software tool developed to automate data workflows, manage records efficiently, and demonstrate solid OOP design principles.
+                Progressive Web App tailored for academic assignment tracking. Integrates Supabase PostgreSQL REST APIs, offline LocalStorage caching, and milestone boards.
               </p>
               <div class="work-links">
-                <a href="#" class="work-btn work-btn-primary" target="_blank" rel="noopener">
+                <a href="https://github.com/hiddengemofbell" class="work-btn work-btn-primary" target="_blank" rel="noopener" aria-label="View EduFlow Task Manager demo">
                   <i class="bi bi-box-arrow-up-right"></i> Demo
                 </a>
-                <a href="#" class="work-btn work-btn-outline" target="_blank" rel="noopener">
+                <a href="https://github.com/hiddengemofbell" class="work-btn work-btn-outline" target="_blank" rel="noopener" aria-label="View EduFlow Task Manager source code on GitHub">
                   <i class="bi bi-github"></i> Code
                 </a>
               </div>
@@ -345,40 +352,40 @@
 
     <!-- CERTIFICATES SECTION -->
     <div class="divider"></div>
-    <section class="sec" id="certificates">
+    <section class="sec" id="certificates" aria-label="Certificates and Credentials">
       <div class="container">
         <p class="sec-label reveal"><i class="bi bi-patch-check-fill"></i> Credentials</p>
         <h2 class="sec-title reveal">Certificates &amp; Achievements</h2>
 
         <div class="certs-grid">
           <div class="cert-card reveal">
-            <div class="cert-icon"><i class="bi bi-award-fill"></i></div>
+            <div class="cert-icon"><i class="bi bi-shield-check"></i></div>
             <div class="cert-info">
-              <h3>Certificate Title One</h3>
-              <p>Issuing Organization · 2026</p>
-              <a href="#" class="cert-link" target="_blank" rel="noopener">
+              <h3>Hide, Filter, Deceive — Defending Against Recon</h3>
+              <p>Cybersecurity Technical Webinar Series · 2026</p>
+              <a href="https://www.linkedin.com/in/maribel-bravo-876655374" class="cert-link" target="_blank" rel="noopener" aria-label="Verify Hide, Filter, Deceive credential on LinkedIn">
                 Verify Credential <i class="bi bi-arrow-up-right"></i>
               </a>
             </div>
           </div>
 
           <div class="cert-card reveal">
-            <div class="cert-icon"><i class="bi bi-award-fill"></i></div>
+            <div class="cert-icon"><i class="bi bi-cpu-fill"></i></div>
             <div class="cert-info">
-              <h3>Certificate Title Two</h3>
-              <p>Issuing Organization · 2026</p>
-              <a href="#" class="cert-link" target="_blank" rel="noopener">
+              <h3>Computer Hardware &amp; Software Fundamentals</h3>
+              <p>IT Core Architecture Series · 2026</p>
+              <a href="https://www.linkedin.com/in/maribel-bravo-876655374" class="cert-link" target="_blank" rel="noopener" aria-label="Verify Hardware & Software Fundamentals credential on LinkedIn">
                 Verify Credential <i class="bi bi-arrow-up-right"></i>
               </a>
             </div>
           </div>
 
           <div class="cert-card reveal">
-            <div class="cert-icon"><i class="bi bi-award-fill"></i></div>
+            <div class="cert-icon"><i class="bi bi-terminal-fill"></i></div>
             <div class="cert-info">
-              <h3>Certificate Title Three</h3>
-              <p>Issuing Organization · 2026</p>
-              <a href="#" class="cert-link" target="_blank" rel="noopener">
+              <h3>Introduction to Security Operating Systems</h3>
+              <p>Systems &amp; Security Engineering Workshop · 2026</p>
+              <a href="https://www.linkedin.com/in/maribel-bravo-876655374" class="cert-link" target="_blank" rel="noopener" aria-label="Verify Security Operating Systems credential on LinkedIn">
                 Verify Credential <i class="bi bi-arrow-up-right"></i>
               </a>
             </div>
@@ -389,7 +396,7 @@
 
     <!-- CONTACT SECTION -->
     <div class="divider"></div>
-    <section class="sec" id="contact">
+    <section class="sec" id="contact" aria-label="Contact Maribel Bravo">
       <div class="container">
         <p class="sec-label text-center justify-content-center reveal">
           <i class="bi bi-envelope-paper-fill"></i> Get in Touch
@@ -411,7 +418,7 @@
                 </div>
                 <div>
                   <div class="contact-item-label">Email</div>
-                  <a href="mailto:moralesmairbel262@gmail.com" class="contact-item-val">moralesmaribel262@gmail.com</a>
+                  <a href="mailto:moralesmaribel262@gmail.com" class="contact-item-val">moralesmaribel262@gmail.com</a>
                 </div>
               </div>
 
@@ -421,7 +428,7 @@
                 </div>
                 <div>
                   <div class="contact-item-label">Location</div>
-                  <span class="contact-item-val">Philippines (Open to Remote)</span>
+                  <span class="contact-item-val">Laguna, Philippines</span>
                 </div>
               </div>
 
@@ -431,7 +438,7 @@
                 </div>
                 <div>
                   <div class="contact-item-label">Availability</div>
-                  <span class="contact-item-val text-success">Open for Internships / Projects</span>
+                  <span class="contact-item-val text-success">Open for Internships &amp; Collaborative Projects</span>
                 </div>
               </div>
             </div>
@@ -441,9 +448,10 @@
           <div class="contact-form-card reveal">
             <form id="contact-form">
               <div class="mb-3">
-                <label class="form-label">Your Name</label>
+                <label class="form-label" for="contact-name">Your Name</label>
                 <input
                   type="text"
+                  id="contact-name"
                   name="name"
                   class="form-control"
                   placeholder="e.g. Jane Doe"
@@ -451,9 +459,10 @@
                 />
               </div>
               <div class="mb-3">
-                <label class="form-label">Your Email</label>
+                <label class="form-label" for="contact-email">Your Email</label>
                 <input
                   type="email"
+                  id="contact-email"
                   name="email"
                   class="form-control"
                   placeholder="e.g. jane@example.com"
@@ -461,8 +470,9 @@
                 />
               </div>
               <div class="mb-3">
-                <label class="form-label">Message</label>
+                <label class="form-label" for="contact-message">Message</label>
                 <textarea
+                  id="contact-message"
                   name="message"
                   class="form-control"
                   rows="4"
@@ -470,40 +480,48 @@
                   required
                 ></textarea>
               </div>
-              <button type="submit" class="btn-send">
+              <button type="submit" class="btn-send" aria-label="Send contact message">
                 <i class="bi bi-send-fill me-2"></i>Send Message
               </button>
-              <div class="contact-msg" id="contact-msg"></div>
+              <div class="contact-msg" id="contact-msg" aria-live="polite"></div>
             </form>
           </div>
         </div>
       </div>
     </section>
+    </main>
 
-    <!-- FOOTER -->
+    <!-- FOOTER (WEB 1: Semantic HTML5) -->
     <footer>
       <div class="hero-socials mb-3">
         <a
-          href="https://github.com/your-username"
+          href="https://github.com/hiddengemofbell"
           class="social-icon"
           target="_blank"
           rel="noopener"
-          aria-label="GitHub"
+          aria-label="GitHub Profile (opens in new tab)"
         >
           <i class="bi bi-github"></i>
         </a>
         <a
-          href="https://linkedin.com/in/your-username"
+          href="https://www.linkedin.com/in/maribel-bravo-876655374"
           class="social-icon"
           target="_blank"
           rel="noopener"
-          aria-label="LinkedIn"
+          aria-label="LinkedIn Profile (opens in new tab)"
         >
           <i class="bi bi-linkedin"></i>
         </a>
+        <a
+          href="mailto:moralesmaribel262@gmail.com"
+          class="social-icon"
+          aria-label="Email Maribel Bravo"
+        >
+          <i class="bi bi-envelope-fill"></i>
+        </a>
       </div>
       <p class="mb-0">
-        &copy; 2026 <span>Maribel Bravo</span> &nbsp;&middot;&nbsp; Crafted with HTML5, CSS3 &amp; Bootstrap 5
+        &copy; 2026 <span>Maribel Bravo</span> &nbsp;&middot;&nbsp; BSIT 3A WMAD &nbsp;&middot;&nbsp; Laguna State Polytechnic University
       </p>
     </footer>
 
