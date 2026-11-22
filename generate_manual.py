@@ -713,31 +713,34 @@ def create_brochure_manual():
     re2 = p_end.add_run("Laguna State Polytechnic University – Siniloan Campus\nCollege of Computer Studies  •  2026")
     re2.font.name, re2.font.size, re2.font.color.rgb = "Segoe UI", Pt(9.5), C_GRAY
 
+    import shutil
     out_dl = r"C:\Users\moral\Downloads\ITST_301_Personal_Portfolio_Manual_Maribel_Bravo.docx"
     out_repo = r"C:\Users\moral\OneDrive\Practice\basic-portfolio\ITST_301_Personal_Portfolio_Manual_Maribel_Bravo.docx"
-    doc.save(out_dl)
     doc.save(out_repo)
 
-    # Export sequential PDF via Word COM
+    # Export sequential PDF via Word COM from repo copy
     word = win32com.client.Dispatch("Word.Application")
     word.Visible = False
-    doc_com = word.Documents.Open(os.path.abspath(out_dl))
+    doc_com = word.Documents.Open(os.path.abspath(out_repo))
     pdf_dl = r"C:\Users\moral\Downloads\ITST_301_Personal_Portfolio_Manual_Maribel_Bravo.pdf"
     pdf_repo = r"C:\Users\moral\OneDrive\Practice\basic-portfolio\ITST_301_Personal_Portfolio_Manual_Maribel_Bravo.pdf"
-    doc_com.SaveAs(os.path.abspath(pdf_dl), FileFormat=17)
     doc_com.SaveAs(os.path.abspath(pdf_repo), FileFormat=17)
     doc_com.Close()
     word.Quit()
 
     # Impose onto 8.5 x 13 inch Landscape sheets (13 in wide x 8.5 in tall)
-    impose_booklet(
-        pdf_dl,
-        r"C:\Users\moral\Downloads\ITST_301_Brochure_Booklet_PRINT_READY_8.5x13.pdf",
-    )
-    impose_booklet(
-        pdf_dl,
-        r"C:\Users\moral\OneDrive\Practice\basic-portfolio\ITST_301_Brochure_Booklet_PRINT_READY_8.5x13.pdf",
-    )
+    impose_repo = r"C:\Users\moral\OneDrive\Practice\basic-portfolio\ITST_301_Brochure_Booklet_PRINT_READY_8.5x13.pdf"
+    impose_dl = r"C:\Users\moral\Downloads\ITST_301_Brochure_Booklet_PRINT_READY_8.5x13.pdf"
+    impose_booklet(pdf_repo, impose_repo)
+
+    for src, dst in [(out_repo, out_dl), (pdf_repo, pdf_dl), (impose_repo, impose_dl)]:
+        try:
+            shutil.copy2(src, dst)
+        except PermissionError:
+            base, ext = os.path.splitext(dst)
+            alt = f"{base}_updated{ext}"
+            shutil.copy2(src, alt)
+            print(f"Downloads file locked; saved updated copy to: {alt}")
 
 
 def impose_booklet(src_pdf_path, dst_pdf_path):
