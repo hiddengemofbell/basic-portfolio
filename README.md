@@ -14,7 +14,7 @@
 | :--- | :--- |
 | **Student Developer** | **Maribel Bravo** |
 | **Student ID Number** | **0224-0865** |
-| **Course & Section** | **BSIT 3A WMAD** (Web & Mobile Application Development) |
+| **Course & Program** | **BS Information Technology** |
 | **Institution** | **Laguna State Polytechnic University** (Siniloan Campus) |
 | **College** | **College of Computer Studies** |
 | **Course Code & Title**| **ITST 301 Principles of Web Design** / **ITEL 304 • IPT2 Final Project** |
@@ -170,7 +170,7 @@ This taught me that great web design is never just about visual flair; true craf
 
 ## 📄 License & Attribution
 
-- **Developed By**: Maribel Bravo (BSIT 3A WMAD)
+- **Developed By**: Maribel Bravo (BS Information Technology)
 - **Institution**: Laguna State Polytechnic University — Siniloan Campus
 - **Icons**: [Bootstrap Icons](https://icons.getbootstrap.com/)
 - **Fonts**: [Inter via Google Fonts](https://fonts.google.com/specimen/Inter)

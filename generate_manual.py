@@ -272,7 +272,7 @@ def create_brochure_manual():
     for lbl, val in [
         ("Developer: ", "Maribel Bravo\n"),
         ("Student ID: ", "0224-0865\n"),
-        ("Section: ", "BSIT 3A WMAD\n"),
+        ("Program: ", "BS Information Technology\n"),
         ("Instructor: ", "Prof. Julius A. Derla\n"),
         ("Subject: ", "ITST 301 / IPT2 Final Project"),
     ]:
@@ -346,7 +346,7 @@ def create_brochure_manual():
 
     add_subhead("1. Developer Profile")
     add_body(
-        "I am Maribel Bravo (ID: 0224-0865), a 3rd-year BSIT student majoring in Web and Mobile Application Development (BSIT 3A WMAD) at Laguna State Polytechnic University – Siniloan Campus."
+        "I am Maribel Bravo (ID: 0224-0865), a BS Information Technology student at Laguna State Polytechnic University – Siniloan Campus."
     )
     add_body(
         "HTML5, CSS3, Bootstrap 5, JavaScript (ES6+), Python (Flask), Java, SQL, PostgreSQL, React, and Git/GitHub.",
@@ -370,7 +370,7 @@ def create_brochure_manual():
     parts_grid = [
         ("Header & Sticky Navbar", "Brand monogram 'MB' and responsive navigation links that collapse into a mobile drawer on narrow screens."),
         ("Hero Introduction", "Dynamic typewriter headline, availability status indicator, CV download button, and direct social links."),
-        ("About Me & Highlights", "Academic profile (BSIT 3A WMAD, LSPU), optimized portrait photo, and 3 specialization highlight cards."),
+        ("About Me & Highlights", "Academic profile (BS Information Technology, LSPU), optimized portrait photo, and 3 specialization highlight cards."),
         ("Technical Skills", "Categorized skill pills separating core languages, frontend styling, tools, and AI dev environments."),
         ("Featured Projects (WEB 6)", "Real-world works: Cake Ordering Platform, Queue Ordering System, and EduFlow Task Manager PWA."),
         ("Certificates & Contact", "Verified cybersecurity/IT credentials plus an interactive Formspree contact form with live feedback."),
@@ -708,7 +708,7 @@ def create_brochure_manual():
     p_end = doc.add_paragraph()
     p_end.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_end.paragraph_format.space_before = Pt(40)
-    re1 = p_end.add_run("Maribel Bravo  •  BSIT 3A WMAD\n")
+    re1 = p_end.add_run("Maribel Bravo  •  BS Information Technology\n")
     re1.font.name, re1.font.size, re1.bold, re1.font.color.rgb = "Segoe UI", Pt(11), True, C_PURPLE
     re2 = p_end.add_run("Laguna State Polytechnic University – Siniloan Campus\nCollege of Computer Studies  •  2026")
     re2.font.name, re2.font.size, re2.font.color.rgb = "Segoe UI", Pt(9.5), C_GRAY
